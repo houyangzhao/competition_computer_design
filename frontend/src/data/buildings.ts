@@ -22,10 +22,10 @@ export const buildings: Building[] = [
     coordinates: [117.9333, 40.9963],
     description:
       '大乘之阁建于清乾隆年间，仿西藏桑耶寺建造，六层木结构楼阁，内供世界最大木雕佛像——千手千眼观音菩萨，高22.28米，被列入世界文化遗产。',
-    modelPath: null,
+    modelPath: '/models/wumen.splat', // 占位，替换为真实古建模型
     coverImage: null,
     type: 'public',
-    status: 'pending',
+    status: 'ready',
   },
   {
     id: 'tulou-fujian',
