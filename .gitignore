@@ -17,6 +17,7 @@ backend/storage/
 # Generated frontend assets and local demos
 frontend/public/generated/
 frontend/public/models/
+reconstruction/CULTURE3D-main/
 
 # OS/editor noise
 .DS_Store
