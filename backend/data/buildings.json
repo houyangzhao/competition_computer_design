@@ -1,0 +1,38 @@
+[
+  {
+    "id": "forbidden-city",
+    "name": "故宫太和殿",
+    "dynasty": "明清",
+    "location": "北京市东城区",
+    "coordinates": [116.3974, 39.9163],
+    "description": "太和殿俗称金銮殿，是明清两代皇帝举行重大典礼的场所，也是中国古建筑数字化展示的代表性对象。",
+    "modelPath": "/models/bonsai.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "chengde-puning",
+    "name": "承德普宁寺大乘之阁",
+    "dynasty": "清",
+    "location": "河北省承德市",
+    "coordinates": [117.9333, 40.9963],
+    "description": "大乘之阁是承德避暑山庄外八庙中的重要建筑，具有鲜明的藏式建筑特征，适合作为公共重建项目示例。",
+    "modelPath": null,
+    "coverImage": null,
+    "type": "public",
+    "status": "pending"
+  },
+  {
+    "id": "tulou-fujian",
+    "name": "福建永定土楼",
+    "dynasty": "明清",
+    "location": "福建省龙岩市",
+    "coordinates": [116.9386, 24.6478],
+    "description": "客家土楼是大型民居建筑群，具有独特的空间组织与防御结构，适合作为古建筑重建样本。",
+    "modelPath": null,
+    "coverImage": null,
+    "type": "public",
+    "status": "pending"
+  }
+]

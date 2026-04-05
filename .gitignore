@@ -1,0 +1,23 @@
+.git/
+.venv/
+.md_cache/
+.run/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Frontend dependencies and build outputs
+frontend/node_modules/
+frontend/dist/
+
+# Backend generated artifacts and local runtime data
+backend/storage/
+
+# Generated frontend assets and local demos
+frontend/public/generated/
+frontend/public/models/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "user-245bf97c",
+    "username": "demo",
+    "email": "demo@example.com",
+    "avatar": null,
+    "createdAt": "2026-04-05T10:16:18Z",
+    "password": "123456"
+  },
+  {
+    "id": "user-94d45df8",
+    "username": "demo2",
+    "email": "demo2@example.com",
+    "avatar": null,
+    "createdAt": "2026-04-05T10:17:58Z",
+    "password": "123456"
+  },
+  {
+    "id": "user-6c12e201",
+    "username": "flowdemo",
+    "email": "flowdemo@example.com",
+    "avatar": null,
+    "createdAt": "2026-04-05T12:01:08Z",
+    "password": "123456"
+  },
+  {
+    "id": "user-b6c2f85d",
+    "username": "imgdemo",
+    "email": "imgdemo@example.com",
+    "avatar": null,
+    "createdAt": "2026-04-05T12:01:46Z",
+    "password": "123456"
+  }
+]
