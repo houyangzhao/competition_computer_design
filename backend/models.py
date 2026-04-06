@@ -32,6 +32,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class CameraSettings(BaseModel):
+    up: tuple[float, float, float]
+    position: tuple[float, float, float]
+    lookAt: tuple[float, float, float]
+
+
 class Building(BaseModel):
     id: str
     name: str
@@ -43,6 +49,7 @@ class Building(BaseModel):
     coverImage: str | None
     type: Literal["public", "personal"]
     status: Literal["ready", "pending", "processing"]
+    cameraSettings: CameraSettings | None = None
     ownerId: str | None = None
     sourceJobId: str | None = None
     contributionCount: int = 0

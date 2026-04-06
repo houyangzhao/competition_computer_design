@@ -6,6 +6,7 @@ import SplatViewer from '../components/SplatViewer'
 import { useAuth } from '../context/useAuth'
 import { fetchBuilding, fetchBuildingKnowledge } from '../lib/api'
 import type { Building, KnowledgeItem } from '../types'
+import { DEFAULT_OUTDOOR_CAMERA } from '../types'
 
 export default function BuildingPage() {
   const { id } = useParams<{ id: string }>()
@@ -87,8 +88,9 @@ export default function BuildingPage() {
         {building.status === 'ready' && building.modelPath ? (
           <SplatViewer
             modelPath={building.modelPath}
-            initialCameraPosition={[2, -1.5, -2]}
-            initialCameraLookAt={[0, 0, 0]}
+            cameraUp={(building.cameraSettings ?? DEFAULT_OUTDOOR_CAMERA).up}
+            initialCameraPosition={(building.cameraSettings ?? DEFAULT_OUTDOOR_CAMERA).position}
+            initialCameraLookAt={(building.cameraSettings ?? DEFAULT_OUTDOOR_CAMERA).lookAt}
           />
         ) : (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-6 bg-stone-900/60 backdrop-blur-sm">

@@ -1,3 +1,17 @@
+export interface CameraSettings {
+  up: [number, number, number]
+  position: [number, number, number]
+  lookAt: [number, number, number]
+}
+
+// outdoor_arch 变换后的默认相机参数
+// outdoor_arch: X→下, Y→朝向观察者, Z→左，所以物理"上"= -X
+export const DEFAULT_OUTDOOR_CAMERA: CameraSettings = {
+  up: [-1, 0, 0],
+  position: [0, 50, 0],
+  lookAt: [0, 0, 0],
+}
+
 export interface Building {
   id: string
   name: string
@@ -9,6 +23,7 @@ export interface Building {
   coverImage: string | null
   type: 'public' | 'personal'
   status: 'ready' | 'pending' | 'processing'
+  cameraSettings?: CameraSettings | null
   ownerId: string | null
   sourceJobId: string | null
   contributionCount: number
