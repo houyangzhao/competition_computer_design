@@ -52,7 +52,7 @@
 ### 1. 安装依赖（首次，约 20 分钟）
 
 ```bash
-bash reconstraction/setup_autodl.sh
+bash reconstruction/setup_autodl.sh
 ```
 
 脚本会自动：
@@ -91,7 +91,7 @@ bash stop_project.sh   # 停止
 
 ```bash
 # 将照片放入 <scene_dir>/input/ 后执行：
-bash reconstraction/reconstruct.sh /path/to/scene_dir 7000
+bash reconstruction/reconstruct.sh /path/to/scene_dir 7000
 ```
 
 ---
@@ -115,13 +115,12 @@ bash reconstraction/reconstruct.sh /path/to/scene_dir 7000
 │   ├── data/                  # buildings.json / users.json / jobs.json
 │   └── storage/               # 用户上传文件（.gitignore）
 │
-├── reconstraction/            # 重建管线脚本（后端调用）
-│   ├── reconstruct.sh         # 一键重建入口
+├── reconstruction/            # 重建管线脚本 + 文档
+│   ├── reconstruct.sh         # 一键重建入口（后端调用）
 │   ├── convert_ply_to_splat.py # PLY → .splat 格式转换
-│   ├── filter_images.py       # 图像预筛选
-│   └── setup_autodl.sh        # 环境安装脚本
-│
-├── reconstruction/            # 重建开发文档与工具
+│   ├── filter_images.py       # 图像预筛选（GPS 范围过滤）
+│   ├── prune_by_cameras.py    # 后处理：基于相机位置剪枝漂浮点
+│   ├── setup_autodl.sh        # 环境安装脚本
 │   └── 重建流程实录.md         # COLMAP + 3DGS 完整踩坑记录
 │
 ├── start_project.sh           # 启动前后端

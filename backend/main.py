@@ -21,7 +21,7 @@ JOBS_ROOT = STORAGE_DIR / "jobs"
 FRONTEND_PUBLIC_DIR = REPO_DIR / "frontend" / "public"
 GENERATED_DIR = FRONTEND_PUBLIC_DIR / "generated"
 
-RECONSTRUCTION_DIR = REPO_DIR / "reconstraction"
+RECONSTRUCTION_DIR = REPO_DIR / "reconstruction"
 FILTER_SCRIPT = RECONSTRUCTION_DIR / "filter_images.py"
 CONVERT_SCRIPT = RECONSTRUCTION_DIR / "convert_ply_to_splat.py"
 RECONSTRUCT_SCRIPT = RECONSTRUCTION_DIR / "reconstruct.sh"
