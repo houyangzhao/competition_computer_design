@@ -50,6 +50,10 @@ Key facts from experience:
 - COLMAP 相机物理"上方"= `-R^T @ [0,1,0]`，经 `R_arch` 变换后得到 viewer 的 `cameraUp`
 - 当 COLMAP 世界 Y 轴 ≈ 物理下方时，`cameraUp ≈ [0,0,-1]`，但这不是普遍规律
 
+## Other Reference Docs
+
+- `plan.md` — MVP 功能规划与交付范围，记录了哪些功能已实现、哪些是 stub
+
 ## Competition Constraints
 
 - Allowed AI tools are restricted to a specific list of 10 Chinese AI platforms (通义, 文心, DeepSeek, 智谱, Kimi, etc.) — see `instruction&&requirments/instruction/附件一：竞赛内容说明及分类.docx` for the full list
