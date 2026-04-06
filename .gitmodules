@@ -1,0 +1,6 @@
+[submodule "vendor/gaussian-splatting"]
+	path = vendor/gaussian-splatting
+	url = https://github.com/graphdeco-inria/gaussian-splatting.git
+[submodule "vendor/colmap"]
+	path = vendor/colmap
+	url = https://github.com/colmap/colmap.git
