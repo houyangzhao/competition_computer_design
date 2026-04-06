@@ -1,28 +1,24 @@
-.git/
 .venv/
-.md_cache/
+.env
 .run/
-
-# Python cache
-__pycache__/
-*.pyc
-
-# Frontend dependencies and build outputs
+.md_cache/
+instruction&&requirments/
+reconstraction/*.md
 frontend/node_modules/
 frontend/dist/
-
-# Backend generated artifacts and local runtime data
-backend/storage/
-
-# Generated frontend assets and local demos
 frontend/public/generated/
-frontend/public/models/
-reconstruction/CULTURE3D-main/
+frontend/public/models/*.splat
+backend/storage/
+backend/data/*.db
+backend/data/*.sqlite3
+*.pyc
+__pycache__/
+backend/__pycache__/
+tmp/
 
-# Large binary outputs (3DGS training results)
-*.splat
-*.ply
-
-# OS/editor noise
-.DS_Store
-Thumbs.db
+# Personal AI workflow files
+CLAUDE.md
+GEMINI.md
+plan.md
+AGENTS.md
+.claude/

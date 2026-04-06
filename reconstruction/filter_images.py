@@ -99,20 +99,27 @@ def filter_by_gps(src_dir: Path, dst_dir: Path,
                   lat_min: float, lat_max: float,
                   lon_min: float, lon_max: float,
                   limit: int):
-    """按 GPS 范围过滤图像并复制到目标目录"""
+    """按 GPS 范围过滤图像并复制到目标目录。
+    无 GPS EXIF 的图像视为通过过滤（不因缺少 GPS 而被丢弃）。"""
     dst_dir.mkdir(parents=True, exist_ok=True)
     images = sorted(src_dir.glob("**/*.[jJ][pP][gG]")) + \
              sorted(src_dir.glob("**/*.[pP][nN][gG]"))
     print(f"共 {len(images)} 张图像，按 GPS 范围筛选...")
 
     matched = []
+    no_gps_count = 0
     for p in images:
         coords = get_gps(p)
-        if coords and lat_min <= coords[0] <= lat_max \
-                   and lon_min <= coords[1] <= lon_max:
+        if coords is None:
+            # 无 GPS EXIF：直接通过（不因缺少 GPS 丢弃用户上传的照片）
+            matched.append(p)
+            no_gps_count += 1
+        elif lat_min <= coords[0] <= lat_max and lon_min <= coords[1] <= lon_max:
             matched.append(p)
 
-    print(f"GPS 范围内: {len(matched)} 张")
+    if no_gps_count:
+        print(f"无 GPS: {no_gps_count} 张（已保留）")
+    print(f"GPS 范围内或无 GPS: {len(matched)} 张")
 
     if len(matched) > limit:
         # 均匀采样：从 matched 中每隔 step 取一张

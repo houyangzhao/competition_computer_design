@@ -1,60 +1,91 @@
-import type { Building, ReconstructionJob, ChatMessage, User } from '../types'
+import type {
+  Building,
+  ChatMessage,
+  ContributionResult,
+  KnowledgeItem,
+  OverviewStats,
+  ReconstructionJob,
+  User,
+} from '../types'
 
 const BASE = '/api'
 
-// ─── Auth（预留后端接口，当前由 AuthContext mock 实现）────────────────────────
+async function readError(res: Response): Promise<never> {
+  const contentType = res.headers.get('content-type') ?? ''
+
+  if (contentType.includes('application/json')) {
+    const data = (await res.json()) as { detail?: string }
+    throw new Error(data.detail || 'Request failed')
+  }
+
+  throw new Error((await res.text()) || 'Request failed')
+}
+
+async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init)
+  if (!res.ok) {
+    return readError(res)
+  }
+  return res.json() as Promise<T>
+}
 
 export async function apiRegister(
   username: string,
   email: string,
   password: string
 ): Promise<{ user: User; token: string }> {
-  const res = await fetch(`${BASE}/auth/register`, {
+  return requestJson(`${BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password }),
   })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
 }
 
 export async function apiLogin(
   email: string,
   password: string
 ): Promise<{ user: User; token: string }> {
-  const res = await fetch(`${BASE}/auth/login`, {
+  return requestJson(`${BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
 }
 
 export async function apiGetMe(token: string): Promise<User> {
-  const res = await fetch(`${BASE}/auth/me`, {
+  return requestJson(`${BASE}/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error('Unauthorized')
-  return res.json()
 }
 
-// ─── Buildings ────────────────────────────────────────────────────────────────
-
-export async function fetchBuildings(type?: 'public' | 'personal'): Promise<Building[]> {
-  const url = type ? `${BASE}/buildings?type=${type}` : `${BASE}/buildings`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('Failed to fetch buildings')
-  return res.json()
+export async function fetchOverview(): Promise<OverviewStats> {
+  return requestJson(`${BASE}/overview`)
 }
 
-export async function fetchBuilding(id: string): Promise<Building> {
-  const res = await fetch(`${BASE}/buildings/${id}`)
-  if (!res.ok) throw new Error('Failed to fetch building')
-  return res.json()
+export async function fetchBuildings(type: 'public' | 'personal' = 'public', token?: string | null): Promise<Building[]> {
+  const url = `${BASE}/buildings?type=${type}`
+  return requestJson(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
 }
 
-// ─── Reconstruction ───────────────────────────────────────────────────────────
+export async function fetchMyBuildings(token: string): Promise<Building[]> {
+  return requestJson(`${BASE}/my/buildings`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export async function fetchBuilding(id: string, token?: string | null): Promise<Building> {
+  return requestJson(`${BASE}/buildings/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+}
+
+export async function fetchBuildingKnowledge(id: string, token?: string | null): Promise<KnowledgeItem[]> {
+  return requestJson(`${BASE}/buildings/${id}/knowledge`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+}
 
 export async function submitReconstruction(
   buildingName: string,
@@ -63,31 +94,27 @@ export async function submitReconstruction(
 ): Promise<ReconstructionJob> {
   const form = new FormData()
   form.append('building_name', buildingName)
-  files.forEach((f) => form.append('photos', f))
-  const res = await fetch(`${BASE}/reconstruct`, {
+  files.forEach((file) => form.append('photos', file))
+
+  return requestJson(`${BASE}/reconstruct`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
   })
-  if (!res.ok) throw new Error('Failed to submit reconstruction job')
-  return res.json()
 }
 
-export async function fetchJobStatus(jobId: string): Promise<ReconstructionJob> {
-  const res = await fetch(`${BASE}/reconstruct/${jobId}`)
-  if (!res.ok) throw new Error('Failed to fetch job status')
-  return res.json()
+export async function fetchJobStatus(jobId: string, token?: string | null): Promise<ReconstructionJob> {
+  return requestJson(`${BASE}/reconstruct/${jobId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
 }
 
-export async function fetchMyJobs(token: string): Promise<ReconstructionJob[]> {
-  const res = await fetch(`${BASE}/reconstruct`, {
+export async function saveReconstructionJob(jobId: string, token: string): Promise<Building> {
+  return requestJson(`${BASE}/reconstruct/${jobId}/save`, {
+    method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error('Failed to fetch jobs')
-  return res.json()
 }
-
-// ─── Chat（预留 AI 对话接口）─────────────────────────────────────────────────
 
 export async function sendChatMessage(
   buildingId: string,
@@ -95,7 +122,7 @@ export async function sendChatMessage(
   history: ChatMessage[],
   token?: string | null
 ): Promise<ChatMessage> {
-  const res = await fetch(`${BASE}/chat`, {
+  return requestJson(`${BASE}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -103,24 +130,19 @@ export async function sendChatMessage(
     },
     body: JSON.stringify({ building_id: buildingId, message, history }),
   })
-  if (!res.ok) throw new Error('Failed to send chat message')
-  return res.json()
 }
-
-// ─── Contribute（预留众包接口）───────────────────────────────────────────────
 
 export async function contributePhotos(
   projectId: string,
   files: File[],
   token?: string | null
-): Promise<{ received: number }> {
+): Promise<ContributionResult> {
   const form = new FormData()
-  files.forEach((f) => form.append('photos', f))
-  const res = await fetch(`${BASE}/contribute/${projectId}`, {
+  files.forEach((file) => form.append('photos', file))
+
+  return requestJson(`${BASE}/contribute/${projectId}`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
   })
-  if (!res.ok) throw new Error('Failed to contribute photos')
-  return res.json()
 }
