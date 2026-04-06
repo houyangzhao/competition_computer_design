@@ -361,6 +361,7 @@ def normalize_building(item: dict[str, Any]) -> dict[str, Any]:
         coverImage=item.get("coverImage"),
         type=building_type,
         status=status,
+        cameraSettings=item.get("cameraSettings"),
         ownerId=item.get("ownerId"),
         sourceJobId=item.get("sourceJobId"),
         contributionCount=max(0, int(item.get("contributionCount") or 0)),

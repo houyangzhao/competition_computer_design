@@ -72,14 +72,31 @@ def scene_center_from_ply(ply_path: Path):
     return np.array([np.median(x[mask]), np.median(y[mask]), np.median(z[mask])])
 
 
+def find_ply(scene_dir: Path, iterations: int) -> Path:
+    """Find point_cloud.ply, supporting both output_10000 and output_10k naming."""
+    # Try exact numeric name first
+    candidate = scene_dir / f"output_{iterations}" / "point_cloud" / f"iteration_{iterations}" / "point_cloud.ply"
+    if candidate.exists():
+        return candidate
+    # Glob for any output_* directory
+    plys = sorted(scene_dir.glob("output_*/point_cloud/iteration_*/point_cloud.ply"))
+    if not plys:
+        raise FileNotFoundError(f"在 {scene_dir} 下找不到任何 point_cloud.ply")
+    # Prefer the one with highest iteration number
+    def _iter_num(p):
+        try:
+            return int(p.parent.name.replace("iteration_", ""))
+        except ValueError:
+            return 0
+    return max(plys, key=_iter_num)
+
+
 def compute(scene_dir: Path, iterations: int):
     images_bin = scene_dir / "sparse" / "0" / "images.bin"
-    ply_path = scene_dir / f"output_{iterations}" / "point_cloud" / f"iteration_{iterations}" / "point_cloud.ply"
+    ply_path = find_ply(scene_dir, iterations)
 
     if not images_bin.exists():
         raise FileNotFoundError(f"找不到 {images_bin}")
-    if not ply_path.exists():
-        raise FileNotFoundError(f"找不到 {ply_path}")
 
     scene_center = scene_center_from_ply(ply_path)
     print(f"场景中心: {scene_center}")
@@ -100,15 +117,14 @@ def compute(scene_dir: Path, iterations: int):
     R = quat_to_R(qw, qx, qy, qz)
     C_world = -R.T @ np.array([tx, ty, tz])
 
-    up_world   = R.T @ np.array([0, -1, 0])   # COLMAP -Y = 物理上方
-    look_world = R.T @ np.array([0,  0, 1])   # COLMAP +Z = 相机朝向
+    up_world = R.T @ np.array([0, -1, 0])   # COLMAP -Y = 物理上方
 
-    C_splat    = R_ARCH @ (C_world - scene_center)
-    up_splat   = R_ARCH @ up_world
-    look_splat = R_ARCH @ look_world
+    C_splat  = R_ARCH @ (C_world - scene_center)
+    up_splat = R_ARCH @ up_world
 
-    dist = np.linalg.norm(C_world - scene_center)
-    lookAt_splat = C_splat + look_splat * dist
+    # lookAt 固定为场景中心（origin），场景已居中到原点。
+    # 不使用相机的 COLMAP 朝向，避免拍摄时相机略微偏转导致初始视角歪。
+    lookAt_splat = np.array([0.0, 0.0, 0.0])
 
     print(f"使用相机: {name}  (距中位点 {dists[idx]:.3f})")
 

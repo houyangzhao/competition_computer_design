@@ -4,79 +4,198 @@
     "name": "旃檀寺建筑群",
     "dynasty": "古代",
     "location": "中国佛教名山",
-    "coordinates": [103.5697, 29.5143],
+    "coordinates": [
+      103.5697,
+      29.5143
+    ],
     "description": "数据来源于中国古建筑图像数据库（Chinese Ancient Architecture Image Database），收录自四大佛教名山或道教名山的传统寺庙建筑。本模型由158张实地照片经COLMAP位姿估计与3D Gaussian Splatting算法重建而成。",
     "modelPath": "/models/zhantan.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [0.13, -0.957, 0.259],
+      "position": [-1.215, 0.404, 0.501],
+      "lookAt": [0.0, 0.0, 0.0]
+    }
   },
   {
     "id": "wumen",
     "name": "故宫午门",
     "dynasty": "明清",
     "location": "北京市东城区",
-    "coordinates": [116.3974, 39.9190],
+    "coordinates": [
+      116.3974,
+      39.919
+    ],
     "description": "午门是紫禁城的正门，建于明永乐十八年（1420年），清顺治四年（1647年）重建。城楼高37.95米，是中国现存规模最大的古代城门之一。本模型基于3D Gaussian Splatting技术重建，真实还原其宏伟的建筑形制。",
     "modelPath": "/models/wumen.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [-0.012, -0.037, -0.999],
+      "position": [9.293, -1.925, -0.475],
+      "lookAt": [0.0, 0.0, 0.0]
+    }
   },
   {
     "id": "bonsai",
     "name": "禅意盆景（室内场景）",
     "dynasty": "现代",
     "location": "室内展示场景",
-    "coordinates": [116.3974, 39.9163],
+    "coordinates": [
+      116.3974,
+      39.9163
+    ],
     "description": "来自Mip-NeRF 360标准基准数据集的室内盆景场景，展示3D Gaussian Splatting在室内精细物体重建方面的能力。场景包含复杂的枝叶细节与光影变化，是3DGS算法精度的经典测试用例。",
     "modelPath": "/models/bonsai.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "position": [
+        0,
+        1,
+        3
+      ],
+      "lookAt": [
+        0,
+        0,
+        0
+      ]
+    }
   },
   {
     "id": "church",
     "name": "乡村教堂（外景）",
     "dynasty": "近代",
     "location": "欧洲",
-    "coordinates": [10.0, 51.0],
+    "coordinates": [
+      10.0,
+      51.0
+    ],
     "description": "欧洲乡村教堂外景重建，来自公开3DGS演示数据集。展示3D Gaussian Splatting对石砌建筑、尖顶结构及植被的重建效果，模型轻量（约27万高斯椭球），加载流畅。",
     "modelPath": "/models/church.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "position": [
+        0,
+        2,
+        13
+      ],
+      "lookAt": [
+        0,
+        0,
+        0
+      ]
+    }
   },
   {
     "id": "st-pauls",
     "name": "圣保罗大教堂",
     "dynasty": "近代",
     "location": "英国伦敦",
-    "coordinates": [-0.0983, 51.5138],
+    "coordinates": [
+      -0.0983,
+      51.5138
+    ],
     "description": "英国伦敦圣保罗大教堂外景3DGS重建，来自公开演示数据集。圣保罗大教堂始建于1675年，其标志性穹顶是世界著名建筑地标之一，本模型真实呈现巴洛克式建筑风格。",
     "modelPath": "/models/st_pauls.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "position": [
+        0,
+        5,
+        41
+      ],
+      "lookAt": [
+        0,
+        0,
+        0
+      ]
+    }
   },
   {
     "id": "taj-mahal",
     "name": "泰姬陵",
     "dynasty": "近代",
     "location": "印度阿格拉",
-    "coordinates": [78.0421, 27.1751],
+    "coordinates": [
+      78.0421,
+      27.1751
+    ],
     "description": "印度泰姬陵3DGS重建，来自公开演示数据集。泰姬陵建于1632—1653年，是莫卧儿帝国建筑的巅峰之作，被列为世界文化遗产。本模型体量轻巧（约13万高斯椭球），展示3DGS对白色大理石建筑的精细还原。",
     "modelPath": "/models/taj_mahal.splat",
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "ready",
+    "cameraSettings": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "position": [
+        0,
+        5,
+        40
+      ],
+      "lookAt": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  {
+    "id": "neu-bridge",
+    "name": "东北大学石拱桥",
+    "dynasty": "现代",
+    "location": "辽宁省沈阳市东北大学",
+    "coordinates": [
+      123.418,
+      41.649
+    ],
+    "description": "东北大学校园内石拱桥，由98张实地照片经COLMAP位姿估计与3D Gaussian Splatting算法重建而成。PSNR 23.5 dB，训练10,000轮。展示3DGS对对称石砌建筑结构的重建能力。",
+    "modelPath": "/models/neu_bridge.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready",
+    "cameraSettings": {
+      "up": [-0.081, 0.003, -0.997],
+      "position": [0.846, 1.293, 0.119],
+      "lookAt": [0.0, 0.0, 0.0]
+    }
   },
   {
     "id": "forbidden-city",
     "name": "故宫太和殿",
     "dynasty": "明清",
     "location": "北京市东城区",
-    "coordinates": [116.3974, 39.9163],
+    "coordinates": [
+      116.3974,
+      39.9163
+    ],
     "description": "太和殿俗称金銮殿，是明清两代皇帝举行重大典礼的场所，也是中国古建筑数字化展示的代表性对象。",
     "modelPath": "/models/bonsai.splat",
     "coverImage": null,
@@ -94,7 +213,10 @@
     "name": "承德普宁寺大乘之阁",
     "dynasty": "清",
     "location": "河北省承德市",
-    "coordinates": [117.9333, 40.9963],
+    "coordinates": [
+      117.9333,
+      40.9963
+    ],
     "description": "大乘之阁是承德避暑山庄外八庙中的重要建筑，具有鲜明的藏式建筑特征，适合作为公共重建项目示例。",
     "modelPath": null,
     "coverImage": null,
@@ -112,7 +234,10 @@
     "name": "福建永定土楼",
     "dynasty": "明清",
     "location": "福建省龙岩市",
-    "coordinates": [116.9386, 24.6478],
+    "coordinates": [
+      116.9386,
+      24.6478
+    ],
     "description": "客家土楼是大型民居建筑群，具有独特的空间组织与防御结构，适合作为古建筑重建样本。",
     "modelPath": null,
     "coverImage": null,

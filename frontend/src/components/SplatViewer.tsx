@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d'
 import * as THREE from 'three'
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js'
 
 const DEFAULT_CAMERA_UP: [number, number, number] = [0, -1, 0]
 const DEFAULT_CAMERA_POSITION: [number, number, number] = [2, -2, -2]
@@ -31,7 +30,6 @@ export default function SplatViewer({
 }: SplatViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<InstanceType<typeof GaussianSplats3D.Viewer> | null>(null)
-  const plcRef = useRef<PointerLockControls | null>(null)
   const rafRef = useRef<number>(0)
   const [locked, setLocked] = useState(false)
   const [debugInfo, setDebugInfo] = useState<string | null>(null)
@@ -75,17 +73,49 @@ export default function SplatViewer({
       .then(() => {
         viewer.start()
 
-        // ── 2. 绑定 PointerLockControls ──────────────────────────────
+        // ── 2. 相机 & 渲染器引用 ─────────────────────────────────────
         // @ts-ignore
         const camera: THREE.PerspectiveCamera = viewer.camera
         // @ts-ignore
         const renderer: THREE.WebGLRenderer = viewer.renderer
 
-        const plc = new PointerLockControls(camera, renderer.domElement)
-        plcRef.current = plc
+        // 强制对齐相机到 cameraSettings，消除 viewer 内部可能引入的 roll
+        camera.up.set(...cameraUp)
+        camera.position.set(...initialCameraPosition)
+        camera.lookAt(new THREE.Vector3(...initialCameraLookAt))
 
-        plc.addEventListener('lock',   () => setLocked(true))
-        plc.addEventListener('unlock', () => setLocked(false))
+        // ── 3. 原生 Pointer Lock + 自定义旋转 ──────────────────────
+        const SENSITIVITY = 0.002
+        const upVec = new THREE.Vector3(...cameraUp).normalize()
+        let isLocked = false
+
+        const onPointerLockChange = () => {
+          isLocked = document.pointerLockElement === renderer.domElement
+          setLocked(isLocked)
+        }
+        document.addEventListener('pointerlockchange', onPointerLockChange)
+
+        // 鼠标旋转：水平→绕场景 up 偏航，垂直→绕相机本地 right 俯仰
+        const tmpRight = new THREE.Vector3()
+        const yawQuat  = new THREE.Quaternion()
+        const pitchQuat = new THREE.Quaternion()
+
+        const onMouseMove = (e: MouseEvent) => {
+          if (!isLocked) return
+          // Yaw: 绕场景 up 轴旋转（保证左右是真正的水平转头）
+          yawQuat.setFromAxisAngle(upVec, -e.movementX * SENSITIVITY)
+          camera.quaternion.premultiply(yawQuat)
+          // Pitch: 绕相机当前 right 轴旋转，限制俯仰角防止翻转
+          tmpRight.set(1, 0, 0).applyQuaternion(camera.quaternion)
+          const pitchDelta = -e.movementY * SENSITIVITY
+          // 计算当前仰角（相机朝向与 up 平面的夹角）
+          const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+          const currentPitch = Math.asin(THREE.MathUtils.clamp(fwd.dot(upVec), -1, 1))
+          const newPitch = THREE.MathUtils.clamp(currentPitch + pitchDelta, -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05)
+          pitchQuat.setFromAxisAngle(tmpRight, newPitch - currentPitch)
+          camera.quaternion.multiply(pitchQuat)
+        }
+        document.addEventListener('mousemove', onMouseMove)
 
         // ── 3. 键盘事件 ──────────────────────────────────────────────
         const onKeyDown = (e: KeyboardEvent) => { KEYS[e.code] = true }
@@ -94,37 +124,36 @@ export default function SplatViewer({
         window.addEventListener('keyup',   onKeyUp)
 
         // ── 4. 每帧移动逻辑 ──────────────────────────────────────────
-        // 移动方向向量（不含 up 分量，在 cameraUp 平面内移动）
-        const upVec = new THREE.Vector3(...cameraUp).normalize()
-        const tmpFwd  = new THREE.Vector3()
-        const tmpRight = new THREE.Vector3()
+        const tmpFwd = new THREE.Vector3()
+        const tmpMoveRight = new THREE.Vector3()
 
         const loop = () => {
           rafRef.current = requestAnimationFrame(loop)
-          if (!plc.isLocked) return
+          if (!isLocked) return
 
-          // 相机朝向（水平分量）
           camera.getWorldDirection(tmpFwd)
           tmpFwd.sub(upVec.clone().multiplyScalar(tmpFwd.dot(upVec))).normalize()
-          tmpRight.crossVectors(tmpFwd, upVec).normalize()
+          tmpMoveRight.crossVectors(tmpFwd, upVec).normalize()
 
           const speed = MOVE_SPEED * (KEYS['ShiftLeft'] || KEYS['ShiftRight'] ? 3 : 1)
 
-          if (KEYS['KeyW'] || KEYS['ArrowUp'])    camera.position.addScaledVector(tmpFwd,   speed)
-          if (KEYS['KeyS'] || KEYS['ArrowDown'])  camera.position.addScaledVector(tmpFwd,  -speed)
-          if (KEYS['KeyA'] || KEYS['ArrowLeft'])  camera.position.addScaledVector(tmpRight, -speed)
-          if (KEYS['KeyD'] || KEYS['ArrowRight']) camera.position.addScaledVector(tmpRight,  speed)
-          if (KEYS['Space'])     camera.position.addScaledVector(upVec,  speed)
-          if (KEYS['KeyQ'] || KEYS['KeyC']) camera.position.addScaledVector(upVec, -speed)
+          if (KEYS['KeyW'] || KEYS['ArrowUp'])    camera.position.addScaledVector(tmpFwd,       speed)
+          if (KEYS['KeyS'] || KEYS['ArrowDown'])  camera.position.addScaledVector(tmpFwd,      -speed)
+          if (KEYS['KeyA'] || KEYS['ArrowLeft'])  camera.position.addScaledVector(tmpMoveRight, -speed)
+          if (KEYS['KeyD'] || KEYS['ArrowRight']) camera.position.addScaledVector(tmpMoveRight,  speed)
+          if (KEYS['Space'])                       camera.position.addScaledVector(upVec,         speed)
+          if (KEYS['KeyQ'] || KEYS['KeyC'])        camera.position.addScaledVector(upVec,        -speed)
         }
         rafRef.current = requestAnimationFrame(loop)
 
         // cleanup
         return () => {
           cancelAnimationFrame(rafRef.current)
+          document.removeEventListener('pointerlockchange', onPointerLockChange)
+          document.removeEventListener('mousemove', onMouseMove)
           window.removeEventListener('keydown', onKeyDown)
           window.removeEventListener('keyup',   onKeyUp)
-          plc.dispose()
+          if (document.pointerLockElement === renderer.domElement) document.exitPointerLock()
         }
       })
       .catch((err: unknown) => console.error('SplatViewer load error:', err))
@@ -133,12 +162,15 @@ export default function SplatViewer({
       cancelAnimationFrame(rafRef.current)
       viewerRef.current?.dispose()
       viewerRef.current = null
-      plcRef.current = null
     }
   }, [modelPath])
 
   const handleClick = () => {
-    plcRef.current?.lock()
+    const viewer = viewerRef.current
+    if (!viewer) return
+    // @ts-ignore
+    const renderer: THREE.WebGLRenderer = viewer.renderer
+    renderer?.domElement.requestPointerLock()
   }
 
   return (
