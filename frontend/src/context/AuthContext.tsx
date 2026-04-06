@@ -1,49 +1,71 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import type { User } from '../types'
-import { loadAuthState, saveAuthState, clearAuthState } from '../lib/auth'
-import { apiLogin, apiRegister } from '../lib/api'
+import { useEffect, useState, type ReactNode } from 'react'
+import { apiGetMe, apiLogin, apiRegister } from '../lib/api'
+import { clearAuthState, loadAuthState, saveAuthState } from '../lib/auth'
+import { AuthContext } from './auth-context'
 
-interface AuthContextValue {
-  user: User | null
+interface InternalAuthState {
+  ready: boolean
   token: string | null
-  login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
-  logout: () => void
+  user: ReturnType<typeof loadAuthState>['user']
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+function getInitialState(): InternalAuthState {
+  const initial = loadAuthState()
+  return {
+    user: initial.user,
+    token: initial.token,
+    ready: !initial.token,
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(() => loadAuthState())
+  const [state, setState] = useState<InternalAuthState>(getInitialState)
 
-  const login = useCallback(async (email: string, password: string) => {
+  useEffect(() => {
+    if (!state.token || state.ready) return
+
+    let cancelled = false
+
+    apiGetMe(state.token)
+      .then((user) => {
+        if (cancelled) return
+        const next = { user, token: state.token, ready: true }
+        setState(next)
+        saveAuthState({ user: next.user, token: next.token })
+      })
+      .catch(() => {
+        if (cancelled) return
+        setState({ user: null, token: null, ready: true })
+        clearAuthState()
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [state.ready, state.token])
+
+  async function login(email: string, password: string) {
     const { user, token } = await apiLogin(email, password)
-    const next = { user, token }
+    const next = { user, token, ready: true }
     setState(next)
-    saveAuthState(next)
-  }, [])
+    saveAuthState({ user: next.user, token: next.token })
+  }
 
-  const register = useCallback(async (username: string, email: string, password: string) => {
+  async function register(username: string, email: string, password: string) {
     const { user, token } = await apiRegister(username, email, password)
-    const next = { user, token }
+    const next = { user, token, ready: true }
     setState(next)
-    saveAuthState(next)
-  }, [])
+    saveAuthState({ user: next.user, token: next.token })
+  }
 
-  const logout = useCallback(() => {
-    setState({ user: null, token: null })
+  function logout() {
+    setState({ user: null, token: null, ready: true })
     clearAuthState()
-  }, [])
+  }
 
   return (
-    <AuthContext.Provider value={{ user: state.user, token: state.token, login, register, logout }}>
+    <AuthContext.Provider value={{ user: state.user, token: state.token, ready: state.ready, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
 }

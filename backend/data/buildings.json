@@ -1,15 +1,93 @@
 [
   {
+    "id": "zhantan",
+    "name": "旃檀寺建筑群",
+    "dynasty": "古代",
+    "location": "中国佛教名山",
+    "coordinates": [103.5697, 29.5143],
+    "description": "数据来源于中国古建筑图像数据库（Chinese Ancient Architecture Image Database），收录自四大佛教名山或道教名山的传统寺庙建筑。本模型由158张实地照片经COLMAP位姿估计与3D Gaussian Splatting算法重建而成。",
+    "modelPath": "/models/zhantan.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "wumen",
+    "name": "故宫午门",
+    "dynasty": "明清",
+    "location": "北京市东城区",
+    "coordinates": [116.3974, 39.9190],
+    "description": "午门是紫禁城的正门，建于明永乐十八年（1420年），清顺治四年（1647年）重建。城楼高37.95米，是中国现存规模最大的古代城门之一。本模型基于3D Gaussian Splatting技术重建，真实还原其宏伟的建筑形制。",
+    "modelPath": "/models/wumen.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "bonsai",
+    "name": "禅意盆景（室内场景）",
+    "dynasty": "现代",
+    "location": "室内展示场景",
+    "coordinates": [116.3974, 39.9163],
+    "description": "来自Mip-NeRF 360标准基准数据集的室内盆景场景，展示3D Gaussian Splatting在室内精细物体重建方面的能力。场景包含复杂的枝叶细节与光影变化，是3DGS算法精度的经典测试用例。",
+    "modelPath": "/models/bonsai.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "church",
+    "name": "乡村教堂（外景）",
+    "dynasty": "近代",
+    "location": "欧洲",
+    "coordinates": [10.0, 51.0],
+    "description": "欧洲乡村教堂外景重建，来自公开3DGS演示数据集。展示3D Gaussian Splatting对石砌建筑、尖顶结构及植被的重建效果，模型轻量（约27万高斯椭球），加载流畅。",
+    "modelPath": "/models/church.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "st-pauls",
+    "name": "圣保罗大教堂",
+    "dynasty": "近代",
+    "location": "英国伦敦",
+    "coordinates": [-0.0983, 51.5138],
+    "description": "英国伦敦圣保罗大教堂外景3DGS重建，来自公开演示数据集。圣保罗大教堂始建于1675年，其标志性穹顶是世界著名建筑地标之一，本模型真实呈现巴洛克式建筑风格。",
+    "modelPath": "/models/st_pauls.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
+    "id": "taj-mahal",
+    "name": "泰姬陵",
+    "dynasty": "近代",
+    "location": "印度阿格拉",
+    "coordinates": [78.0421, 27.1751],
+    "description": "印度泰姬陵3DGS重建，来自公开演示数据集。泰姬陵建于1632—1653年，是莫卧儿帝国建筑的巅峰之作，被列为世界文化遗产。本模型体量轻巧（约13万高斯椭球），展示3DGS对白色大理石建筑的精细还原。",
+    "modelPath": "/models/taj_mahal.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready"
+  },
+  {
     "id": "forbidden-city",
     "name": "故宫太和殿",
     "dynasty": "明清",
     "location": "北京市东城区",
     "coordinates": [116.3974, 39.9163],
     "description": "太和殿俗称金銮殿，是明清两代皇帝举行重大典礼的场所，也是中国古建筑数字化展示的代表性对象。",
-    "modelPath": null,
+    "modelPath": "/models/bonsai.splat",
     "coverImage": null,
     "type": "public",
-    "status": "pending"
+    "status": "ready",
+    "ownerId": null,
+    "sourceJobId": null,
+    "contributionCount": 12,
+    "photoCount": 240,
+    "createdAt": "2026-04-06T00:00:00Z",
+    "updatedAt": "2026-04-06T00:00:00Z"
   },
   {
     "id": "chengde-puning",
@@ -21,7 +99,13 @@
     "modelPath": null,
     "coverImage": null,
     "type": "public",
-    "status": "pending"
+    "status": "pending",
+    "ownerId": null,
+    "sourceJobId": null,
+    "contributionCount": 5,
+    "photoCount": 86,
+    "createdAt": "2026-04-06T00:00:00Z",
+    "updatedAt": "2026-04-06T00:00:00Z"
   },
   {
     "id": "tulou-fujian",
@@ -33,6 +117,12 @@
     "modelPath": null,
     "coverImage": null,
     "type": "public",
-    "status": "pending"
+    "status": "pending",
+    "ownerId": null,
+    "sourceJobId": null,
+    "contributionCount": 3,
+    "photoCount": 54,
+    "createdAt": "2026-04-06T00:00:00Z",
+    "updatedAt": "2026-04-06T00:00:00Z"
   }
 ]

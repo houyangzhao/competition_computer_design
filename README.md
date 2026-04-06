@@ -1,170 +1,65 @@
-# 筑忆 · 古建筑数字化重建平台
+# 筑忆
 
-> 中国大学生计算机设计大赛 2026 · 人工智能应用赛道
+筑忆是一个面向古建筑数字化保护的 Web 项目。当前版本已经具备以下能力：
 
-用户拍摄古建筑照片上传，系统自动完成 SfM 位姿估计 → 3D Gaussian Splatting 重建 → WebGL 实时渲染的完整闭环，让每个人都能为古建筑留下可交互的数字档案。
+- 用户注册、登录和会话恢复
+- 公共建筑档案浏览与知识卡片展示
+- 探索页示例 `.splat` 三维可视化预览
+- 个人照片上传重建、任务轮询和结果预览
+- 重建结果保存到“我的模型”
+- 公共项目众包照片上传
+- 建筑 AI 讲解问答接口，支持接入 DeepSeek
+- 开发环境下的 mock 重建模式，以及真实 GPU 管线自动切换
+- SQLite 持久化存储
 
----
+## 项目结构
 
-## 技术架构
+- `frontend/`: React 19 + TypeScript + Vite 前端
+- `backend/`: FastAPI 后端与 SQLite 数据存储
+- `reconstraction/`: 真实重建脚本、图片筛选与 `.splat` 转换工具
 
-```
-浏览器 (React + WebGL)
-    ↕  REST API
-后端 (FastAPI)
-    ↕  子进程
-重建管线 (COLMAP → 3DGS → .splat)
-```
+## 本地启动
 
-| 层 | 技术 |
-|---|---|
-| 前端渲染 | React 18 + TypeScript + Tailwind CSS |
-| 3D 渲染 | @mkkellogg/gaussian-splats-3d (WebGL) |
-| 后端 API | FastAPI + uvicorn |
-| SfM 重建 | COLMAP 3.11（GPU SIFT，从源码编译） |
-| 神经渲染 | 3D Gaussian Splatting（graphdeco-inria） |
-| 格式转换 | 自研 PLY → .splat 转换脚本（含坐标系修正） |
+1. 进入项目目录：`cd competition_computer_design`
+2. 初始化依赖：`./setup_project.sh`
+3. 启动项目：`./start_project.sh`
+4. 停止项目：`./stop_project.sh`
 
----
+默认前端运行在 `http://127.0.0.1:5173`，后端运行在 `http://127.0.0.1:8000`。
 
-## 功能
+## 环境变量
 
-| 功能 | 状态 |
-|---|---|
-| 浏览公共古建筑档案 | ✅ |
-| 用户注册 / 登录 | ✅ |
-| 上传照片 → 自动重建 → 实时进度 | ✅ |
-| WebGL 三维模型交互查看 | ✅ |
-| 我的模型管理 | ✅ |
-| 众包贡献照片 | 🔜 接口已预留 |
-| AI 建筑知识讲解 | 🔜 接口已预留 |
+可复制 `.env.example` 作为参考。最常用的是：
 
----
+- `ZHUYI_RECONSTRUCTION_MODE=mock`
+  纯本地开发时推荐，重建流程会自动使用示例模型走完整闭环。
+- `ZHUYI_RECONSTRUCTION_MODE=real`
+  强制走真实重建脚本，需要配置好 `gaussian-splatting` 环境。
+- `ZHUYI_GAUSSIAN_SPLATTING_DIR=/root/gaussian-splatting`
+  真实重建依赖目录。
+- `ZHUYI_AUTH_SECRET=change-me`
+  后端签发 token 的密钥。
+- `ZHUYI_SQLITE_PATH=/path/to/backend/data/zhuyi.db`
+  SQLite 数据库文件路径。
+- `DEEPSEEK_API_KEY=...`
+  配置后，建筑详情页的 AI 讲解会优先调用 DeepSeek；未配置时自动回退到本地知识库讲解。
+- `DEEPSEEK_MODEL=deepseek-chat`
+  默认使用 `deepseek-chat`，也可以改成 DeepSeek 官方支持的其他兼容模型。
 
-## 快速开始
-
-### 环境要求
-
-- GPU 服务器（RTX 3090 / 4090，CUDA 12.x）
-- Ubuntu 22.04 + Python 3.10+
-- Node.js 20+
-
-### 1. 安装依赖（首次，约 20 分钟）
-
-```bash
-bash reconstruction/setup_autodl.sh
-```
-
-脚本会自动：
-- 编译 COLMAP 3.11（支持 GPU SIFT）
-- 克隆 gaussian-splatting 并编译 CUDA 扩展
-- 安装后端 Python 依赖
-- 写入环境变量到 `~/.bashrc`
-
-### 2. 创建 Python 虚拟环境
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r backend/requirements.txt
-```
-
-### 3. 安装前端依赖
-
-```bash
-cd frontend && npm install
-```
-
-### 4. 启动项目
-
-```bash
-bash start_project.sh
-```
-
-- 前端：http://localhost:5173
-- 后端 API 文档：http://localhost:8000/docs
-
-```bash
-bash stop_project.sh   # 停止
-```
-
-### 5. 手动重建（命令行）
-
-```bash
-# 将照片放入 <scene_dir>/input/ 后执行：
-bash reconstruction/reconstruct.sh /path/to/scene_dir 7000
-```
-
----
-
-## 目录结构
-
-```
-.
-├── frontend/                  # React 前端
-│   ├── src/
-│   │   ├── pages/             # 页面组件
-│   │   ├── components/        # 通用组件（SplatViewer 等）
-│   │   ├── lib/               # API 客户端
-│   │   └── types/             # TypeScript 类型定义
-│   └── public/
-│       └── generated/         # 重建输出的 .splat 文件（运行时生成）
-│
-├── backend/                   # FastAPI 后端
-│   ├── main.py                # 路由与重建任务调度
-│   ├── models.py              # Pydantic 数据模型
-│   ├── data/                  # buildings.json / users.json / jobs.json
-│   └── storage/               # 用户上传文件（.gitignore）
-│
-├── reconstruction/            # 重建管线脚本 + 文档
-│   ├── reconstruct.sh         # 一键重建入口（后端调用）
-│   ├── convert_ply_to_splat.py # PLY → .splat 格式转换
-│   ├── filter_images.py       # 图像预筛选（GPS 范围过滤）
-│   ├── prune_by_cameras.py    # 后处理：基于相机位置剪枝漂浮点
-│   ├── setup_autodl.sh        # 环境安装脚本
-│   └── 重建流程实录.md         # COLMAP + 3DGS 完整踩坑记录
-│
-├── start_project.sh           # 启动前后端
-└── stop_project.sh            # 停止前后端
-```
-
----
-
-## 重建管线说明
-
-```
-用户照片
-  ↓ filter_images.py（GPS 筛选 / 均匀采样，≤300 张）
-  ↓ COLMAP feature_extractor（GPU SIFT，xvfb-run headless）
-  ↓ COLMAP exhaustive_matcher
-  ↓ COLMAP mapper → 自动选最大子模型
-  ↓ COLMAP image_undistorter
-  ↓ 3DGS train.py（默认 7000 iter，可配置）
-  ↓ convert_ply_to_splat.py（坐标系修正 + 场景居中）
-  → .splat 文件（发布到 frontend/public/generated/）
-```
-
-关键参数（通过环境变量配置）：
-
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| `ZHUYI_GAUSSIAN_SPLATTING_DIR` | `/root/Code/gaussian-splatting` | GS 目录 |
-| `ZHUYI_RECON_ITERATIONS` | `7000` | 3DGS 训练步数 |
-| `ZHUYI_COLMAP_NO_GPU` | `0` | `1` 为 CPU 模式（慢） |
-| `ZHUYI_RECON_MIN_IMAGES` | `10` | 最少图片数 |
-
----
+建议先执行 `cp .env.example .env`，然后在 `.env` 里补上自己的 `DEEPSEEK_API_KEY`。
 
 ## 开发说明
 
-### 预留接口
+- 后端当前默认使用 SQLite 存储用户、建筑、任务、众包和知识数据。
+- 仓库里保留的 `backend/data/*.json` 主要用于初始化种子数据和旧数据迁移。
+- 如果本机没有 GPU 管线，后端会在 `auto` 模式下自动降级到 mock 重建。
+- 前端构建依赖 Node.js 20+；仓库脚本会优先尝试系统 Node，不满足时使用 `/tmp/node-v22.14.0-linux-x64/bin` 作为兜底。
+- 启动脚本会自动加载项目根目录下的 `.env`，所以 DeepSeek 和重建相关变量都可以直接写在里面。
+- 为避免把模型资产直接提交到仓库，默认不会跟踪 `.splat` 文件；如果你想体验探索页示例预览，可自行放置一个本地示例模型到 `frontend/public/models/bonsai.splat`。
 
-- `POST /api/contribute/{project_id}`：众包照片上传（前端 UI 已实现，后端待对接）
-- `POST /api/chat`：AI 讲解（当前返回占位文本，待接入大模型）
+## 后续建议
 
-### 添加新建筑
-
-编辑 `backend/data/buildings.json`，`status` 为 `"pending"` 时显示"待重建"状态，`"ready"` + `modelPath` 时加载 3D 模型。
-
-### 重建完成后更新建筑
-
-将输出的 `.splat` 文件放入 `frontend/public/models/`，更新 `buildings.json` 中对应条目的 `modelPath` 和 `status`。
+- 将 JSON 存储迁移到 PostgreSQL
+- 为众包和个人模型增加后台审核与编辑能力
+- 用任务队列替代进程内线程调度
+- 接入地图底图与空间标注能力

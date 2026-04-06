@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import AuthModal from './AuthModal'
 
 const links = [
@@ -11,13 +11,16 @@ const links = [
 
 export default function Navbar() {
   const { pathname } = useLocation()
-  const { user, logout } = useAuth()
+  const { ready, user, logout } = useAuth()
   const [modal, setModal] = useState<'login' | 'register' | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20)
+    function handleScroll() {
+      setIsScrolled(window.scrollY > 20)
+    }
+
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -25,66 +28,77 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-8 py-4 flex items-center justify-between
-          ${isScrolled ? 'bg-ink/80 backdrop-blur-xl border-b border-white/5 py-3' : 'bg-transparent'}`}
+        className={`fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-4 py-4 transition-all duration-500 md:px-8 ${
+          isScrolled ? 'border-b border-white/5 bg-ink/80 py-3 backdrop-blur-xl' : 'bg-transparent'
+        }`}
       >
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-cinnabar rounded-sm flex items-center justify-center transform rotate-45 group-hover:rotate-0 transition-transform duration-500 border border-gold/50 shadow-lg">
-            <span className="text-white text-xl font-serif transform -rotate-45 group-hover:rotate-0 transition-transform duration-500">
+        <Link to="/" className="group flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-gold/50 bg-cinnabar shadow-lg transition-transform duration-500 group-hover:rotate-0 group-hover:scale-105 rotate-45">
+            <span className="font-serif text-xl text-white transition-transform duration-500 group-hover:rotate-0 -rotate-45">
               筑
             </span>
           </div>
-          <span className="text-2xl font-serif font-bold tracking-widest text-paper">
-            筑忆 <span className="text-[10px] font-sans tracking-normal opacity-40 ml-1">ZHUYI</span>
+          <span className="font-serif text-2xl font-bold tracking-widest text-paper">
+            筑忆 <span className="ml-1 font-sans text-[10px] tracking-normal opacity-40">ZHUYI</span>
           </span>
         </Link>
 
-        {/* 主导航 */}
-        <div className="flex items-center gap-10">
-          {links.map(({ to, label }) => {
-            const isActive = pathname.startsWith(to)
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`relative text-sm font-medium tracking-widest transition-colors duration-300
-                  ${isActive ? 'text-cinnabar' : 'text-paper/60 hover:text-paper'}`}
-              >
-                {label}
-                {isActive && (
-                  <span className="absolute -bottom-2 left-0 right-0 h-px bg-cinnabar/60 animate-pulse" />
-                )}
-              </Link>
-            )
-          })}
+        <div className="flex items-center gap-4 md:gap-10">
+          <div className="hidden items-center gap-6 md:flex">
+            {links.map(({ to, label }) => {
+              const isActive = pathname.startsWith(to)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`relative text-sm font-medium tracking-widest transition-colors duration-300 ${
+                    isActive ? 'text-cinnabar' : 'text-paper/60 hover:text-paper'
+                  }`}
+                >
+                  {label}
+                  {isActive && <span className="absolute left-0 right-0 -bottom-2 h-px animate-pulse bg-cinnabar/60" />}
+                </Link>
+              )
+            })}
+          </div>
 
-          {/* 用户区 */}
-          {user ? (
+          {!ready ? (
+            <div className="text-xs tracking-[0.2em] text-paper/40 uppercase">Syncing</div>
+          ) : user ? (
             <div className="relative">
               <button
-                onClick={() => setUserMenuOpen((v) => !v)}
-                className="flex items-center gap-3 group px-3 py-1.5 rounded-full border border-white/5 hover:border-gold/30 transition-all"
+                onClick={() => setUserMenuOpen((open) => !open)}
+                className="group flex items-center gap-3 rounded-full border border-white/5 px-3 py-1.5 transition-all hover:border-gold/30"
               >
-                <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold font-bold text-xs border border-gold/30 group-hover:bg-gold group-hover:text-ink transition-colors">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-gold/30 bg-gold/20 text-xs font-bold text-gold transition-colors group-hover:bg-gold group-hover:text-ink">
                   {user.username.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-paper/80 group-hover:text-paper transition-colors">{user.username}</span>
+                <span className="hidden text-sm text-paper/80 transition-colors group-hover:text-paper sm:inline">
+                  {user.username}
+                </span>
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 top-14 w-48 glass-panel rounded-lg shadow-2xl py-2 z-50 overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-52 overflow-hidden rounded-lg py-2 shadow-2xl glass-panel">
                   <Link
                     to="/my"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="block px-6 py-3 text-sm text-paper/80 hover:text-paper hover:bg-white/5 transition-colors"
+                    className="block px-6 py-3 text-sm text-paper/80 transition-colors hover:bg-white/5 hover:text-paper"
                   >
                     我的模型库
                   </Link>
-                  <div className="h-px bg-white/5 mx-4 my-1" />
+                  <Link
+                    to="/reconstruct"
+                    className="block px-6 py-3 text-sm text-paper/80 transition-colors hover:bg-white/5 hover:text-paper"
+                  >
+                    新建重建任务
+                  </Link>
+                  <div className="mx-4 my-1 h-px bg-white/5" />
                   <button
-                    onClick={() => { logout(); setUserMenuOpen(false) }}
-                    className="w-full text-left px-6 py-3 text-sm text-cinnabar hover:bg-cinnabar/10 transition-colors"
+                    onClick={() => {
+                      logout()
+                      setUserMenuOpen(false)
+                    }}
+                    className="w-full px-6 py-3 text-left text-sm text-cinnabar transition-colors hover:bg-cinnabar/10"
                   >
                     安全登出
                   </button>
@@ -92,16 +106,16 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
               <button
                 onClick={() => setModal('login')}
-                className="text-sm text-paper/60 hover:text-paper tracking-widest transition-colors"
+                className="text-sm tracking-widest text-paper/60 transition-colors hover:text-paper"
               >
                 登录
               </button>
               <button
                 onClick={() => setModal('register')}
-                className="px-6 py-2 bg-cinnabar/90 hover:bg-cinnabar text-white text-xs font-bold tracking-[0.2em] rounded-sm transition-all gold-border cinnabar-glow"
+                className="rounded-sm bg-cinnabar/90 px-4 py-2 text-xs font-bold tracking-[0.2em] text-white transition-all gold-border cinnabar-glow hover:bg-cinnabar md:px-6"
               >
                 注册账号
               </button>
@@ -110,12 +124,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {modal && (
-        <AuthModal
-          defaultTab={modal}
-          onClose={() => setModal(null)}
-        />
-      )}
+      {modal && <AuthModal defaultTab={modal} onClose={() => setModal(null)} />}
     </>
   )
 }
