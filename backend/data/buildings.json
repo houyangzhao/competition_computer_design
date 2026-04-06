@@ -6,10 +6,10 @@
     "location": "北京市东城区",
     "coordinates": [116.3974, 39.9163],
     "description": "太和殿俗称金銮殿，是明清两代皇帝举行重大典礼的场所，也是中国古建筑数字化展示的代表性对象。",
-    "modelPath": "/models/bonsai.splat",
+    "modelPath": null,
     "coverImage": null,
     "type": "public",
-    "status": "ready"
+    "status": "pending"
   },
   {
     "id": "chengde-puning",

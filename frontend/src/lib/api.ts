@@ -79,6 +79,14 @@ export async function fetchJobStatus(jobId: string): Promise<ReconstructionJob> 
   return res.json()
 }
 
+export async function fetchMyJobs(token: string): Promise<ReconstructionJob[]> {
+  const res = await fetch(`${BASE}/reconstruct`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Failed to fetch jobs')
+  return res.json()
+}
+
 // ─── Chat（预留 AI 对话接口）─────────────────────────────────────────────────
 
 export async function sendChatMessage(

@@ -356,8 +356,9 @@ async def reconstruct(
     photos: list[UploadFile] = File(...),
     authorization: str | None = Header(default=None),
 ):
+    user_id = None
     if authorization:
-        parse_token(authorization)
+        user_id = parse_token(authorization)
     if not photos:
         raise HTTPException(status_code=400, detail="No photos uploaded")
     if not building_name.strip():
@@ -379,10 +380,26 @@ async def reconstruct(
         "modelPath": None,
         "error": None,
         "jobDir": str(job_dir),
+        "userId": user_id,
     }
     add_job(job)
     start_reconstruction_thread(job_id)
     return to_job_response(job)
+
+
+@app.get("/api/reconstruct", response_model=list[ReconstructionJob])
+def list_jobs(authorization: str | None = Header(default=None)):
+    """列出当前用户的所有重建任务（需登录）"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    token = authorization.removeprefix("Bearer ").strip()
+    users = read_json(USERS_FILE)
+    user = next((u for u in users if u.get("id") == token), None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    jobs = [j for j in load_jobs() if j.get("userId") == user["id"]]
+    jobs.sort(key=lambda j: j.get("createdAt", ""), reverse=True)
+    return [to_job_response(j) for j in jobs]
 
 
 @app.get("/api/reconstruct/{job_id}", response_model=ReconstructionJob)

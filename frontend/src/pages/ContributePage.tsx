@@ -1,9 +1,17 @@
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getBuildingById } from '../data/buildings'
+import { fetchBuilding } from '../lib/api'
 
 export default function ContributePage() {
   const { id } = useParams<{ id: string }>()
-  const building = getBuildingById(id ?? '')
+  const [buildingName, setBuildingName] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+    fetchBuilding(id)
+      .then((b) => setBuildingName(b.name))
+      .catch(() => {})
+  }, [id])
 
   return (
     <div className="pt-20 max-w-2xl mx-auto px-8 pb-16">
@@ -13,15 +21,12 @@ export default function ContributePage() {
 
       <div className="mt-6 mb-8">
         <h1 className="text-3xl font-bold text-stone-100">众包贡献</h1>
-        {building && (
-          <p className="text-amber-400 mt-1">{building.name}</p>
-        )}
+        {buildingName && <p className="text-amber-400 mt-1">{buildingName}</p>}
         <p className="text-stone-500 mt-2">
           为公共大型古建筑项目贡献你的照片，共同构建高精度三维数字档案
         </p>
       </div>
 
-      {/* 说明 */}
       <div className="bg-stone-900 border border-stone-800 rounded-xl p-6 mb-8">
         <h3 className="text-stone-100 font-medium mb-3">拍摄要求</h3>
         <ul className="text-stone-400 text-sm space-y-2">
@@ -33,7 +38,6 @@ export default function ContributePage() {
         </ul>
       </div>
 
-      {/* 众包上传（预留，结构与 ReconstructPage 一致） */}
       <div className="border-2 border-dashed border-stone-700 rounded-xl p-16 flex flex-col items-center gap-4 text-center">
         <span className="text-4xl">📷</span>
         <p className="text-stone-400">众包上传功能即将上线</p>

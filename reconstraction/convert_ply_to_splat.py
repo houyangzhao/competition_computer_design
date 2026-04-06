@@ -13,12 +13,22 @@ convert_ply_to_splat.py
   │ rotation  wxyz    4 × uint8     ( 4 bytes)           │
   └─────────────────────────────────────────────────────┘
 
+坐标系说明：
+  3DGS/COLMAP 输出的世界坐标系通常 Y 朝下，WebGL 期望 Y 朝上。
+  默认应用 --transform x180 修正（绕 X 轴旋转 180°，翻转 Y 和 Z）。
+
 用法:
-  python convert_ply_to_splat.py <input.ply> <output.splat>
+  python convert_ply_to_splat.py <input.ply> <output.splat> [--transform TRANSFORM]
+
+  --transform 选项：
+    none   不做任何变换（原始 COLMAP 坐标）
+    x180   绕 X 轴旋转 180°，修正 Y 朝上（默认，推荐室外建筑场景）
+    x-90   绕 X 轴旋转 -90°（备选）
+    x90    绕 X 轴旋转 +90°（备选）
 """
 
 import sys
-import struct
+import argparse
 import numpy as np
 from plyfile import PlyData
 from pathlib import Path
@@ -30,6 +40,52 @@ SH_C0 = 0.28209479177387814
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
+
+
+def quat_multiply(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
+    """
+    四元数乘法 q1 ⊗ q2，格式均为 (N, 4) wxyz。
+    若 q1 是单个四元数 (4,)，广播到所有 q2。
+    """
+    w1, x1, y1, z1 = q1[..., 0], q1[..., 1], q1[..., 2], q1[..., 3]
+    w2, x2, y2, z2 = q2[:, 0], q2[:, 1], q2[:, 2], q2[:, 3]
+    return np.stack([
+        w1*w2 - x1*x2 - y1*y2 - z1*z2,
+        w1*x2 + x1*w2 + y1*z2 - z1*y2,
+        w1*y2 - x1*z2 + y1*w2 + z1*x2,
+        w1*z2 + x1*y2 - y1*x2 + z1*w2,
+    ], axis=1)
+
+
+# 预定义变换：(旋转矩阵 3×3, 旋转四元数 wxyz)
+TRANSFORMS = {
+    "none": (
+        np.eye(3, dtype=np.float32),
+        np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32),
+    ),
+    # 绕 X 轴 180°：Y → -Y，Z → -Z
+    # 修正 COLMAP（Y 朝下）→ WebGL（Y 朝上），适合室外建筑俯拍场景
+    "x180": (
+        np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]], dtype=np.float32),
+        np.array([0.0, 1.0, 0.0, 0.0], dtype=np.float32),  # (w,x,y,z)
+    ),
+    # 绕 X 轴 -90°：Y → Z，Z → -Y
+    "x-90": (
+        np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]], dtype=np.float32),
+        np.array([0.7071068, -0.7071068, 0.0, 0.0], dtype=np.float32),
+    ),
+    # 绕 X 轴 +90°：Y → -Z，Z → Y
+    "x90": (
+        np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]], dtype=np.float32),
+        np.array([0.7071068, 0.7071068, 0.0, 0.0], dtype=np.float32),
+    ),
+    # 室外建筑专用（Zhantan等）：X→朝下, Y→朝向观察者, Z→朝左
+    # 矩阵 [[0,0,-1],[-1,0,0],[0,1,0]]，四元数 (0.5, 0.5, -0.5, -0.5)
+    "outdoor_arch": (
+        np.array([[0, 0, -1], [-1, 0, 0], [0, 1, 0]], dtype=np.float32),
+        np.array([0.5, 0.5, -0.5, -0.5], dtype=np.float32),
+    ),
+}
 
 
 def load_gaussians(ply_path: str) -> dict:
@@ -46,9 +102,8 @@ def load_gaussians(ply_path: str) -> dict:
     ).astype(np.float32)
 
     # 颜色：从球谐 DC 分量还原 RGB，再 sigmoid（颜色激活）
-    # 3DGS 存储的是 f_dc_0/1/2，对应 R/G/B 的 SH DC 系数
     rgb = np.stack([v["f_dc_0"], v["f_dc_1"], v["f_dc_2"]], axis=1)
-    rgb = 0.5 + SH_C0 * rgb          # SH DC → linear color
+    rgb = 0.5 + SH_C0 * rgb
     rgb = np.clip(rgb, 0.0, 1.0)
     data["rgb"] = rgb.astype(np.float32)
 
@@ -59,6 +114,26 @@ def load_gaussians(ply_path: str) -> dict:
     rot = np.stack([v["rot_0"], v["rot_1"], v["rot_2"], v["rot_3"]], axis=1).astype(np.float32)
     norm = np.linalg.norm(rot, axis=1, keepdims=True)
     data["rotation"] = rot / (norm + 1e-8)
+
+    return data
+
+
+def apply_transform(data: dict, transform_name: str) -> dict:
+    """对位置和旋转四元数应用全局坐标系变换"""
+    if transform_name == "none":
+        return data
+
+    R, q_rot = TRANSFORMS[transform_name]
+    print(f"  应用坐标变换: {transform_name}")
+
+    # 旋转位置
+    data["xyz"] = (data["xyz"] @ R.T)
+
+    # 旋转四元数：q_new = q_rot ⊗ q_gaussian
+    data["rotation"] = quat_multiply(q_rot, data["rotation"])
+    # 重新归一化
+    norm = np.linalg.norm(data["rotation"], axis=1, keepdims=True)
+    data["rotation"] = data["rotation"] / (norm + 1e-8)
 
     return data
 
@@ -78,30 +153,17 @@ def pack_splat(data: dict) -> bytes:
     n = len(data["xyz"])
     print(f"  打包 {n:,} 个 Gaussians...")
 
-    # color: RGB float [0,1] → uint8 [0,255]
-    # alpha: opacity float [0,1] → uint8 [0,255]
     color_u8 = (data["rgb"] * 255).clip(0, 255).astype(np.uint8)
     alpha_u8 = (data["opacity"] * 255).clip(0, 255).astype(np.uint8).reshape(-1, 1)
     rgba_u8 = np.concatenate([color_u8, alpha_u8], axis=1)  # (N, 4)
 
-    # rotation: float [-1,1] → uint8 [0,255]
     rot_u8 = ((data["rotation"] * 128) + 128).clip(0, 255).astype(np.uint8)  # (N, 4)
 
-    # 逐字段拼接，使用 numpy 结构化数组提升速度
-    buf = bytearray(n * 32)
-    pos   = data["xyz"].tobytes()    # N × 3 × 4 bytes
-    scale = data["scale"].tobytes()  # N × 3 × 4 bytes
-    color = rgba_u8.tobytes()        # N × 4 × 1 bytes
-    rot   = rot_u8.tobytes()         # N × 4 × 1 bytes
-
-    # 交错写入（每 Gaussian 32 字节）
-    # 用 numpy 结构化打包更快：
     structured = np.zeros(n, dtype=[
         ("px", np.float32), ("py", np.float32), ("pz", np.float32),
         ("sx", np.float32), ("sy", np.float32), ("sz", np.float32),
         ("cr", np.uint8),   ("cg", np.uint8),   ("cb", np.uint8), ("ca", np.uint8),
         ("rw", np.uint8),   ("rx", np.uint8),   ("ry", np.uint8), ("rz", np.uint8),
-        # padding to 32 bytes: 3×4 + 3×4 + 4×1 + 4×1 = 12+12+4+4 = 32 ✓
     ])
 
     structured["px"] = data["xyz"][:, 0]
@@ -122,7 +184,20 @@ def pack_splat(data: dict) -> bytes:
     return structured.tobytes()
 
 
-def convert(ply_path: str, splat_path: str) -> None:
+def center_scene(data: dict) -> dict:
+    """将场景中心（高不透明度 Gaussian 的加权中位数）平移到原点"""
+    # 用不透明度加权，取各轴中位数作为场景中心（比均值更鲁棒，抗漂浮噪点）
+    weights = data["opacity"]
+    order = np.argsort(weights)[::-1]
+    top_n = max(1, len(order) // 10)  # 用前 10% 高不透明度点估计中心
+    top_xyz = data["xyz"][order[:top_n]]
+    center = np.median(top_xyz, axis=0)
+    print(f"  场景中心: ({center[0]:.2f}, {center[1]:.2f}, {center[2]:.2f}) → 平移到原点")
+    data["xyz"] = data["xyz"] - center
+    return data
+
+
+def convert(ply_path: str, splat_path: str, transform: str = "x180", center: bool = True) -> None:
     print(f"读取 PLY: {ply_path}")
     data = load_gaussians(ply_path)
     n = len(data["xyz"])
@@ -131,13 +206,20 @@ def convert(ply_path: str, splat_path: str) -> None:
     print("按不透明度排序...")
     data = sort_by_opacity(data)
 
-    # 过滤极低不透明度的 Gaussian（减小文件体积，提升渲染速度）
+    # 过滤极低不透明度的 Gaussian
     threshold = 1.0 / 255.0
     mask = data["opacity"] > threshold
     filtered_n = mask.sum()
     if filtered_n < n:
         print(f"  过滤低不透明度 Gaussians: {n:,} → {filtered_n:,}")
         data = {k: v[mask] for k, v in data.items()}
+
+    # 平移场景中心到原点（让 viewer 初始摄像机对着场景）
+    if center:
+        data = center_scene(data)
+
+    # 应用坐标系变换
+    data = apply_transform(data, transform)
 
     print(f"打包为 .splat 格式...")
     raw = pack_splat(data)
@@ -151,8 +233,19 @@ def convert(ply_path: str, splat_path: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("用法: python convert_ply_to_splat.py <input.ply> <output.splat>")
-        sys.exit(1)
-
-    convert(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser(description="Convert 3DGS PLY to .splat")
+    parser.add_argument("input", help="输入 PLY 文件路径")
+    parser.add_argument("output", help="输出 .splat 文件路径")
+    parser.add_argument(
+        "--transform",
+        choices=list(TRANSFORMS.keys()),
+        default="x180",
+        help="坐标系变换（默认 x180：绕 X 轴 180°，修正 COLMAP Y 朝下 → WebGL Y 朝上）",
+    )
+    parser.add_argument(
+        "--no-center",
+        action="store_true",
+        help="不自动将场景中心平移到原点",
+    )
+    args = parser.parse_args()
+    convert(args.input, args.output, args.transform, center=not args.no_center)

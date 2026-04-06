@@ -1,6 +1,16 @@
-# React + TypeScript + Vite
+# 筑忆前端
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 18 + TypeScript + Tailwind CSS + @mkkellogg/gaussian-splats-3d
+
+## 开发
+
+```bash
+npm install
+npm run dev      # 开发服务器 http://localhost:5173
+npm run build    # 生产构建
+```
+
+开发模式下，`/api` 请求自动代理到后端 `http://localhost:8000`（见 `vite.config.ts`）。
 
 Currently, two official plugins are available:
 

@@ -19,6 +19,10 @@ frontend/public/generated/
 frontend/public/models/
 reconstruction/CULTURE3D-main/
 
+# Large binary outputs (3DGS training results)
+*.splat
+*.ply
+
 # OS/editor noise
 .DS_Store
 Thumbs.db
