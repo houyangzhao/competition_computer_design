@@ -6,7 +6,7 @@ import type { Building } from '../types'
 
 export default function ContributePage() {
   const { id } = useParams<{ id: string }>()
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [building, setBuilding] = useState<Building | null>(null)
   const [photos, setPhotos] = useState<File[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,6 +51,10 @@ export default function ContributePage() {
   async function handleSubmit() {
     if (!id || photos.length === 0) {
       setError('请先选择要上传的照片')
+      return
+    }
+    if (!token) {
+      setError('请先登录后再提交众包照片')
       return
     }
 
@@ -98,6 +102,9 @@ export default function ContributePage() {
         <p className="mt-2 text-stone-500">
           为公共大型古建筑项目贡献照片，共同构建更完整的三维数字档案。当前项目已累计 {building.contributionCount} 次贡献、{building.photoCount} 张照片。
         </p>
+        <p className="mt-2 text-xs text-stone-600">
+          {user ? `当前登录账号：${user.username}` : '当前未登录，登录后才能提交众包照片。'}
+        </p>
       </div>
 
       <div className="mb-8 rounded-xl border border-stone-800 bg-stone-900 p-6">
@@ -121,7 +128,7 @@ export default function ContributePage() {
       >
         <span className="text-4xl">📷</span>
         <p className="text-stone-300">点击或拖拽上传你的众包照片</p>
-        <p className="text-sm text-stone-600">支持批量上传，未登录也可参与，但登录后更方便追踪自己的贡献记录。</p>
+        <p className="text-sm text-stone-600">支持批量上传，当前版本要求登录后才能正式提交众包贡献。</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -158,10 +165,10 @@ export default function ContributePage() {
 
       <button
         onClick={handleSubmit}
-        disabled={photos.length === 0 || submitting}
+        disabled={!token || photos.length === 0 || submitting}
         className="mt-6 w-full rounded-xl bg-amber-500 py-3 font-semibold text-stone-950 transition-colors hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500"
       >
-        {submitting ? '上传中...' : '提交众包照片'}
+        {submitting ? '上传中...' : token ? '提交众包照片' : '登录后才能提交'}
       </button>
     </div>
   )

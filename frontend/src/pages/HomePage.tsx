@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 /**
@@ -91,7 +91,6 @@ function ThreeReconstructionBg() {
 
     // --- Animation Loop ---
     let time = 0
-    let phase = 0 // 0: cloud, 1: structure
     
     const animate = () => {
       requestAnimationFrame(animate)

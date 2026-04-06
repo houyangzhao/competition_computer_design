@@ -1,4 +1,5 @@
 import type {
+  AdminProjectInput,
   Building,
   ChatMessage,
   ContributionResult,
@@ -38,6 +39,19 @@ export async function apiRegister(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password }),
+  })
+}
+
+export async function apiRegisterAdmin(
+  username: string,
+  email: string,
+  password: string,
+  adminCode: string
+): Promise<{ user: User; token: string }> {
+  return requestJson(`${BASE}/auth/register-admin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password, adminCode }),
   })
 }
 
@@ -144,5 +158,25 @@ export async function contributePhotos(
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form,
+  })
+}
+
+export async function createAdminProject(project: AdminProjectInput, token: string): Promise<Building> {
+  return requestJson(`${BASE}/admin/projects`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(project),
+  })
+}
+
+export async function deleteAdminProject(buildingId: string, token: string): Promise<{ ok: boolean; deletedId: string }> {
+  return requestJson(`${BASE}/admin/projects/${buildingId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   })
 }

@@ -63,6 +63,7 @@ export interface User {
   id: string
   username: string
   email: string
+  role: 'user' | 'admin'
   avatar: string | null
   createdAt: string
 }
@@ -86,4 +87,13 @@ export interface OverviewStats {
   publicBuildings: number
   personalModels: number
   activeJobs: number
+}
+
+export interface AdminProjectInput {
+  name: string
+  dynasty: string
+  location: string
+  description: string
+  latitude: number
+  longitude: number
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { apiGetMe, apiLogin, apiRegister } from '../lib/api'
+import { apiGetMe, apiLogin, apiRegister, apiRegisterAdmin } from '../lib/api'
 import { clearAuthState, loadAuthState, saveAuthState } from '../lib/auth'
 import { AuthContext } from './auth-context'
 
@@ -58,13 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveAuthState({ user: next.user, token: next.token })
   }
 
+  async function registerAdmin(username: string, email: string, password: string, adminCode: string) {
+    const { user, token } = await apiRegisterAdmin(username, email, password, adminCode)
+    const next = { user, token, ready: true }
+    setState(next)
+    saveAuthState({ user: next.user, token: next.token })
+  }
+
   function logout() {
     setState({ user: null, token: null, ready: true })
     clearAuthState()
   }
 
   return (
-    <AuthContext.Provider value={{ user: state.user, token: state.token, ready: state.ready, login, register, logout }}>
+    <AuthContext.Provider value={{ user: state.user, token: state.token, ready: state.ready, login, register, registerAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   )

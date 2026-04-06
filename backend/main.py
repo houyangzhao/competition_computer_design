@@ -18,6 +18,8 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
+    AdminProjectCreateRequest,
+    AdminRegisterRequest,
     AuthPayload,
     Building,
     ChatMessage,
@@ -42,7 +44,9 @@ FRONTEND_PUBLIC_DIR = REPO_DIR / "frontend" / "public"
 GENERATED_DIR = FRONTEND_PUBLIC_DIR / "generated"
 GENERATED_COVERS_DIR = GENERATED_DIR / "covers"
 
-RECONSTRUCTION_DIR = REPO_DIR / "reconstraction"
+RECONSTRUCTION_DIR = REPO_DIR / "reconstruction"
+if not RECONSTRUCTION_DIR.exists():
+    RECONSTRUCTION_DIR = REPO_DIR / "reconstraction"
 FILTER_SCRIPT = RECONSTRUCTION_DIR / "filter_images.py"
 CONVERT_SCRIPT = RECONSTRUCTION_DIR / "convert_ply_to_splat.py"
 RECONSTRUCT_SCRIPT = RECONSTRUCTION_DIR / "reconstruct.sh"
@@ -63,6 +67,7 @@ COLMAP_NO_GPU = os.environ.get("ZHUYI_COLMAP_NO_GPU", "1")
 RECONSTRUCTION_MODE = os.environ.get("ZHUYI_RECONSTRUCTION_MODE", "mock").lower()
 AUTH_SECRET = os.environ.get("ZHUYI_AUTH_SECRET", "zhuyi-dev-secret").encode("utf-8")
 AUTH_TTL_SECONDS = int(os.environ.get("ZHUYI_AUTH_TTL", str(7 * 24 * 60 * 60)))
+ADMIN_REGISTER_CODE = os.environ.get("ZHUYI_ADMIN_REGISTER_CODE", "zhuyi-admin-register").strip()
 SAMPLE_MODEL = os.environ.get("ZHUYI_SAMPLE_MODEL", "/models/bonsai.splat")
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip()
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
@@ -375,6 +380,9 @@ def normalize_user(item: dict[str, Any]) -> dict[str, Any]:
     username = str(item.get("username") or email.split("@")[0] or "user").strip()
     password_hash = item.get("passwordHash")
     password_salt = item.get("passwordSalt")
+    role = str(item.get("role") or "user").strip().lower()
+    if role not in {"user", "admin"}:
+        role = "user"
 
     if not password_hash or not password_salt:
         raw_password = str(item.get("password") or "123456")
@@ -384,6 +392,7 @@ def normalize_user(item: dict[str, Any]) -> dict[str, Any]:
         id=str(item.get("id") or f"user-{uuid4().hex[:8]}"),
         username=username or "user",
         email=email,
+        role=role,
         avatar=item.get("avatar"),
         createdAt=str(item.get("createdAt") or now_iso()),
         passwordHash=password_hash,
@@ -721,6 +730,13 @@ def require_user(authorization: str | None) -> User:
     return User(**user.model_dump(exclude={"passwordHash", "passwordSalt"}))
 
 
+def require_admin(authorization: str | None) -> User:
+    user = require_user(authorization)
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+
 def find_building(building_id: str) -> dict[str, Any] | None:
     with DATA_LOCK:
         with open_db() as conn:
@@ -788,6 +804,50 @@ def update_building(building_id: str, **updates) -> dict[str, Any]:
             updated = normalize_building({**current, **updates, "updatedAt": now_iso()})
             upsert_building_record(conn, updated)
             return updated
+
+
+def create_public_project(payload: AdminProjectCreateRequest) -> dict[str, Any]:
+    created_at = now_iso()
+    building = normalize_building(
+        {
+            "id": f"public-{uuid4().hex[:8]}",
+            "name": payload.name.strip(),
+            "dynasty": payload.dynasty.strip() or "待考证",
+            "location": payload.location.strip() or "位置待补充",
+            "coordinates": [payload.longitude, payload.latitude],
+            "description": payload.description.strip() or "暂无建筑介绍。",
+            "modelPath": None,
+            "coverImage": None,
+            "type": "public",
+            "status": "pending",
+            "ownerId": None,
+            "sourceJobId": None,
+            "contributionCount": 0,
+            "photoCount": 0,
+            "createdAt": created_at,
+            "updatedAt": created_at,
+        }
+    )
+    with DATA_LOCK:
+        with open_db() as conn:
+            upsert_building_record(conn, building)
+    return building
+
+
+def delete_public_project(building_id: str):
+    building = find_building(building_id)
+    if not building:
+        raise HTTPException(status_code=404, detail="Building not found")
+    if building["type"] != "public":
+        raise HTTPException(status_code=400, detail="Only public crowdsource projects can be deleted")
+
+    with DATA_LOCK:
+        with open_db() as conn:
+            conn.execute("DELETE FROM contributions WHERE building_id = ?", (building_id,))
+            conn.execute("DELETE FROM knowledge_items WHERE building_id = ?", (building_id,))
+            conn.execute("DELETE FROM buildings WHERE id = ?", (building_id,))
+
+    shutil.rmtree(CONTRIBUTIONS_ROOT / building_id, ignore_errors=True)
 
 
 def list_my_buildings(user_id: str) -> list[dict[str, Any]]:
@@ -1374,6 +1434,19 @@ def overview():
 
 @app.post("/api/auth/register", response_model=AuthPayload)
 def register(payload: RegisterRequest):
+    return create_registered_user(payload, role="user")
+
+
+@app.post("/api/auth/register-admin", response_model=AuthPayload)
+def register_admin(payload: AdminRegisterRequest):
+    if not ADMIN_REGISTER_CODE:
+        raise HTTPException(status_code=403, detail="Admin registration is disabled")
+    if payload.adminCode.strip() != ADMIN_REGISTER_CODE:
+        raise HTTPException(status_code=403, detail="Invalid admin registration code")
+    return create_registered_user(payload, role="admin")
+
+
+def create_registered_user(payload: RegisterRequest, role: str) -> AuthPayload:
     username = payload.username.strip()
     if len(username) < 2:
         raise HTTPException(status_code=400, detail="Username must be at least 2 characters")
@@ -1388,6 +1461,7 @@ def register(payload: RegisterRequest):
         id=f"user-{uuid4().hex[:8]}",
         username=username,
         email=payload.email.lower(),
+        role=role,
         avatar=None,
         createdAt=now_iso(),
         passwordHash=password_hash,
@@ -1442,13 +1516,36 @@ def building_knowledge(building_id: str, authorization: str | None = Header(defa
     return get_knowledge_items(building_id)
 
 
+@app.post("/api/admin/projects", response_model=Building)
+def admin_create_project(payload: AdminProjectCreateRequest, authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+
+    if len(payload.name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Project name must be at least 2 characters")
+    if len(payload.location.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Project location is required")
+    if len(payload.description.strip()) < 8:
+        raise HTTPException(status_code=400, detail="Project description must be at least 8 characters")
+
+    building = create_public_project(payload)
+    return Building(**building)
+
+
+@app.delete("/api/admin/projects/{building_id}")
+def admin_delete_project(building_id: str, authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    delete_public_project(building_id)
+    return {"ok": True, "deletedId": building_id}
+
+
 @app.post("/api/reconstruct", response_model=ReconstructionJob)
 async def reconstruct(
     building_name: str = Form(...),
     photos: list[UploadFile] = File(...),
     authorization: str | None = Header(default=None),
 ):
-    owner_id = optional_user_id(authorization)
+    owner = require_user(authorization)
+    owner_id = owner.id
     if not photos:
         raise HTTPException(status_code=400, detail="No photos uploaded")
     if len(photos) < MIN_RECONSTRUCTION_IMAGES:
@@ -1540,7 +1637,8 @@ async def contribute(project_id: str, photos: list[UploadFile] = File(...), auth
     if not photos:
         raise HTTPException(status_code=400, detail="No photos uploaded")
 
-    contributor_id = optional_user_id(authorization)
+    contributor = require_user(authorization)
+    contributor_id = contributor.id
     building = get_accessible_building_or_404(project_id, contributor_id)
     if building["type"] != "public":
         raise HTTPException(status_code=400, detail="Only public projects can accept contributions")
