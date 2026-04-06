@@ -3,10 +3,6 @@
 .run/
 .md_cache/
 instruction&&requirments/
-CLAUDE.md
-GEMINI.md
-plan.md
-选题方案.md
 reconstraction/*.md
 frontend/node_modules/
 frontend/dist/
@@ -18,3 +14,4 @@ backend/data/*.sqlite3
 *.pyc
 __pycache__/
 backend/__pycache__/
+tmp/
