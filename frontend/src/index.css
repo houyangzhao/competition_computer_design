@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0c0d;
+  --color-paper: #f3f2ed;
+  --color-cinnabar: #c43c22;
+  --color-gold: #d4af37;
+  --color-jade: #16a085;
+  --color-stone-850: #1a1b1e;
+  
+  --font-serif: "Noto Serif SC", serif;
+
+  @keyframes scan {
+    0% { transform: translateY(-100vh); }
+    100% { transform: translateY(100vh); }
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-ink/60 border border-white/10;
+  }
+  
+  .cinnabar-glow {
+    @apply shadow-[0_0_20px_rgba(196,60,34,0.15)];
+  }
+  
+  .gold-border {
+    @apply border border-gold/30 hover:border-gold/60 transition-colors;
+  }
+}
+
+body {
+  @apply bg-ink text-paper font-sans antialiased selection:bg-cinnabar selection:text-white;
+}
+
+h1, h2, h3, .font-heritage {
+  @apply font-serif;
+}

@@ -1,0 +1,53 @@
+{
+  "forbidden-city": [
+    {
+      "term": "重檐庑殿顶",
+      "description": "太和殿采用等级极高的重檐庑殿顶，是皇家礼制建筑最典型的屋顶形式之一。",
+      "imageUrl": null
+    },
+    {
+      "term": "斗拱",
+      "description": "太和殿斗拱层级丰富，不仅承担受力传递，也形成了强烈的仪式性视觉节奏。",
+      "imageUrl": null
+    },
+    {
+      "term": "礼制空间",
+      "description": "太和殿位于紫禁城中轴线核心，主要用于登基、大婚、册封等重大典礼。",
+      "imageUrl": null
+    }
+  ],
+  "chengde-puning": [
+    {
+      "term": "藏汉融合",
+      "description": "普宁寺大乘之阁在平面与立面上融合汉式木构和藏式宗教建筑特征。",
+      "imageUrl": null
+    },
+    {
+      "term": "大型楼阁",
+      "description": "建筑体量高大，适合通过众包照片补足多角度外立面和檐口细节。",
+      "imageUrl": null
+    },
+    {
+      "term": "拍摄建议",
+      "description": "建议围绕主体做环绕拍摄，并补充入口、檐角和台基的斜向照片。",
+      "imageUrl": null
+    }
+  ],
+  "tulou-fujian": [
+    {
+      "term": "围合式民居",
+      "description": "土楼通过厚夯土外墙围合内部生活空间，兼具防御和聚居功能。",
+      "imageUrl": null
+    },
+    {
+      "term": "圆形与方形",
+      "description": "福建土楼既有圆楼也有方楼，不同形态对应不同地形与家族组织方式。",
+      "imageUrl": null
+    },
+    {
+      "term": "重建难点",
+      "description": "大尺度连续立面和室内天井对照片数量和环绕连续性要求更高。",
+      "imageUrl": null
+    }
+  ]
+}
