@@ -6,6 +6,8 @@
 # ============================================================
 
 set -e
+# ⚠️  此脚本只在 AutoDL GPU 训练机上运行，使用系统 PyTorch 环境（conda）。
+# 不要在 Web 服务器或本地开发机上执行。
 
 echo "========== 1. 安装 COLMAP =========="
 apt-get update && apt-get install -y colmap
