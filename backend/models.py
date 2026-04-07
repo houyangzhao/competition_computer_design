@@ -7,6 +7,7 @@ class User(BaseModel):
     id: str
     username: str
     email: EmailStr
+    role: Literal["user", "admin"] = "user"
     avatar: str | None = None
     createdAt: str
 
@@ -25,6 +26,10 @@ class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
+
+
+class AdminRegisterRequest(RegisterRequest):
+    adminCode: str
 
 
 class LoginRequest(BaseModel):
@@ -107,3 +112,12 @@ class OverviewStats(BaseModel):
     publicBuildings: int
     personalModels: int
     activeJobs: int
+
+
+class AdminProjectCreateRequest(BaseModel):
+    name: str
+    dynasty: str
+    location: str
+    description: str
+    latitude: float = 0
+    longitude: float = 0

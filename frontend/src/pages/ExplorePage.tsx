@@ -210,6 +210,7 @@ export default function ExplorePage() {
                 )
               })}
             </div>
+
           </div>
 
           <div className="custom-scrollbar flex-1 overflow-y-auto px-8 pb-12">

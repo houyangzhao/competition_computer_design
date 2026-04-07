@@ -7,6 +7,7 @@ export interface AuthContextValue {
   ready: boolean
   login: (email: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
+  registerAdmin: (username: string, email: string, password: string, adminCode: string) => Promise<void>
   logout: () => void
 }
 

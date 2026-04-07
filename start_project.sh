@@ -56,7 +56,7 @@ else
     export ZHUYI_GAUSSIAN_SPLATTING_DIR='${ZHUYI_GAUSSIAN_SPLATTING_DIR:-/root/gaussian-splatting}'
     export ZHUYI_RECON_ITERATIONS='${ZHUYI_RECON_ITERATIONS:-10}'
     export ZHUYI_COLMAP_NO_GPU='${ZHUYI_COLMAP_NO_GPU:-1}'
-    export ZHUYI_RECONSTRUCTION_MODE='${ZHUYI_RECONSTRUCTION_MODE:-mock}'
+    export ZHUYI_RECONSTRUCTION_MODE='${ZHUYI_RECONSTRUCTION_MODE:-real}'
     exec uvicorn main:app --host 127.0.0.1 --port 8000
   " >"$BACKEND_LOG" 2>&1 < /dev/null &
   echo $! >"$BACKEND_PID_FILE"
