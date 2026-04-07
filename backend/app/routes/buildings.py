@@ -4,7 +4,7 @@ from models import Building, KnowledgeItem, OverviewStats
 
 from ..auth import optional_user_id, require_user
 from ..crud import (
-    build_overview, get_accessible_building_or_404, get_knowledge_items,
+    build_overview, delete_personal_building, get_accessible_building_or_404, get_knowledge_items,
     list_my_buildings, list_public_buildings,
 )
 
@@ -51,6 +51,13 @@ def list_buildings_endpoint(type: str | None = None, authorization: str | None =
 def my_buildings(authorization: str | None = Header(default=None)):
     user = require_user(authorization)
     return [Building(**item) for item in list_my_buildings(user.id)]
+
+
+@router.delete("/my/buildings/{building_id}")
+def delete_my_building(building_id: str, authorization: str | None = Header(default=None)):
+    user = require_user(authorization)
+    delete_personal_building(building_id, user.id)
+    return {"ok": True, "deletedId": building_id}
 
 
 @router.get("/buildings/{building_id}", response_model=Building)

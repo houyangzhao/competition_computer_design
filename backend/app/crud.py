@@ -299,6 +299,19 @@ def delete_public_project(building_id: str):
     shutil.rmtree(CONTRIBUTIONS_ROOT / building_id, ignore_errors=True)
 
 
+def delete_personal_building(building_id: str, owner_id: str):
+    building = find_building(building_id)
+    if not building:
+        raise HTTPException(status_code=404, detail="Building not found")
+    if building["type"] != "personal" or building.get("ownerId") != owner_id:
+        raise HTTPException(status_code=404, detail="Building not found")
+
+    with DATA_LOCK:
+        with open_db() as conn:
+            conn.execute("DELETE FROM knowledge_items WHERE building_id = ?", (building_id,))
+            conn.execute("DELETE FROM buildings WHERE id = ?", (building_id,))
+
+
 def list_my_buildings(user_id: str) -> list[dict[str, Any]]:
     with DATA_LOCK:
         with open_db() as conn:

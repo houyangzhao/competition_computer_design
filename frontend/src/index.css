@@ -28,6 +28,95 @@
   .gold-border {
     @apply border border-gold/30 hover:border-gold/60 transition-colors;
   }
+
+  .custom-scrollbar {
+    scrollbar-color: rgba(68, 64, 60, 0.9) rgba(12, 10, 9, 0.9);
+    scrollbar-width: thin;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(12, 10, 9, 0.9);
+    border-radius: 999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(68, 64, 60, 0.95);
+    border-radius: 999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 113, 108, 0.95);
+  }
+
+  .map-picker-marker {
+    background: transparent;
+    border: 0;
+  }
+
+  .map-picker-marker span {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(250, 204, 21, 0.95);
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.22);
+    box-shadow: 0 0 0 8px rgba(212, 175, 55, 0.12), 0 0 28px rgba(212, 175, 55, 0.45);
+  }
+
+  .leaflet-container {
+    background: #050505;
+    font: inherit;
+  }
+
+  .leaflet-pane,
+  .leaflet-layer,
+  .leaflet-tile-container {
+    background: #050505;
+  }
+
+  .leaflet-tile {
+    background: #050505;
+  }
+
+  .leaflet-control-zoom {
+    overflow: hidden;
+    border: 1px solid rgba(68, 64, 60, 0.8) !important;
+    border-radius: 12px !important;
+    background: rgba(0, 0, 0, 0.68) !important;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.42) !important;
+    backdrop-filter: blur(12px);
+  }
+
+  .leaflet-control-zoom a {
+    width: 34px !important;
+    height: 34px !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(68, 64, 60, 0.65) !important;
+    background: rgba(0, 0, 0, 0.54) !important;
+    color: #f3f2ed !important;
+    line-height: 34px !important;
+    transition: background 160ms ease, color 160ms ease;
+  }
+
+  .leaflet-control-zoom a:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: rgba(245, 158, 11, 0.22) !important;
+    color: #fcd34d !important;
+  }
+
+  .leaflet-tooltip {
+    border-color: rgba(68, 64, 60, 0.9) !important;
+    background: rgba(12, 10, 9, 0.9) !important;
+    color: #f3f2ed !important;
+  }
 }
 
 body {

@@ -55,7 +55,7 @@ export default function AboutPage() {
           筑忆希望把“手机拍照、多人补充、浏览器查看”做成一条真正能跑起来的数字抢救链路。
         </p>
         <p className="mt-3 leading-relaxed text-stone-400">
-          现在这套系统已经补齐了用户登录、个人模型库、公共项目众包、重建任务轮询和建筑知识问答等核心闭环，适合继续往完整产品推进。
+          你可以在这里发起个人重建、保存自己的模型，也可以参与公共项目的照片补充，让更多建筑逐步拥有可浏览的数字档案。
         </p>
       </section>
 
@@ -78,24 +78,24 @@ export default function AboutPage() {
       </section>
 
       <section className="mb-12">
-        <h2 className="mb-4 text-xl font-semibold text-amber-400">当前技术栈</h2>
-        <div className="rounded-xl border border-stone-800 bg-stone-900 p-6 font-mono text-sm text-stone-400">
+        <h2 className="mb-4 text-xl font-semibold text-amber-400">当前能力</h2>
+        <div className="rounded-xl border border-stone-800 bg-stone-900 p-6 text-sm text-stone-400">
           <div className="flex flex-col gap-2">
-            <div>React 19 + TypeScript + Vite 8</div>
+            <div>浏览古建筑档案与三维模型</div>
             <div className="text-stone-600">↓</div>
-            <div>FastAPI + JSON storage + token auth</div>
+            <div>上传多角度照片并发起重建</div>
             <div className="text-stone-600">↓</div>
-            <div>COLMAP + 3D Gaussian Splatting</div>
+            <div>保存个人模型，持续补充公共项目</div>
             <div className="text-stone-600">↓</div>
-            <div>开发环境支持 mock 重建管线，真实环境自动切换 GPU 流程</div>
+            <div>在详情页查看建筑说明，并通过问答了解构件与历史背景</div>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold text-amber-400">后续可以继续深化的方向</h2>
+        <h2 className="mb-4 text-xl font-semibold text-amber-400">后续方向</h2>
         <div className="rounded-xl border border-stone-800 bg-stone-900 p-6 text-sm leading-relaxed text-stone-400">
-          继续往下做时，最适合追加的方向是数据库迁移、后台审核、任务队列化、地图底图接入、建筑知识库扩容，以及接入真正的大模型讲解服务。
+          后续会继续完善项目审核、地图定位、建筑知识库和讲解体验，让平台更适合长期维护真实建筑档案。
         </div>
       </section>
     </div>

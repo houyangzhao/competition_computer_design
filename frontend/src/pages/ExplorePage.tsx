@@ -92,24 +92,24 @@ export default function ExplorePage() {
         <div className="space-y-3">
           <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-ink/50 px-4 py-2 backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-gold shadow-[0_0_16px_rgba(212,175,55,0.7)]" />
-            <span className="text-[10px] uppercase tracking-[0.35em] text-paper/60">Immersive Heritage Preview</span>
+            <span className="text-[10px] tracking-[0.35em] text-paper/60">沉浸式古建预览</span>
           </div>
           <div className="space-y-2 font-serif">
             <h1 className="text-5xl font-bold tracking-[0.15em] text-paper drop-shadow-2xl">古建筑探索场</h1>
             <p className="max-w-xl text-sm font-light leading-relaxed tracking-[0.18em] text-paper/65">
-              探索页现在已经直接接入了示例 `.splat` 可视化。右侧悬停已完成档案会切换预览，进入详情页后还能继续使用 AI 讲解与构件知识卡片。
+              悬停右侧已完成的建筑档案可以切换三维预览，进入详情页后还能继续查看讲解与构件知识卡片。
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
           {[
-            { label: 'ACTIVE BUILDINGS', value: buildings.length.toString().padStart(2, '0') },
-            { label: 'READY MODELS', value: readyCount.toString().padStart(2, '0') },
-            { label: 'PENDING ARCHIVES', value: pendingCount.toString().padStart(2, '0') },
+            { label: '建筑档案', value: buildings.length.toString().padStart(2, '0') },
+            { label: '可预览模型', value: readyCount.toString().padStart(2, '0') },
+            { label: '待补充项目', value: pendingCount.toString().padStart(2, '0') },
           ].map((item) => (
             <div key={item.label} className="min-w-[150px] rounded-2xl border border-white/10 bg-ink/45 px-4 py-3 backdrop-blur-sm">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-paper/35">{item.label}</p>
+              <p className="text-[10px] tracking-[0.28em] text-paper/35">{item.label}</p>
               <p className="mt-2 font-mono text-2xl text-gold">{item.value}</p>
             </div>
           ))}
@@ -120,21 +120,21 @@ export default function ExplorePage() {
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-paper/40">Featured Splat Preview</p>
+              <p className="text-[10px] tracking-[0.28em] text-paper/40">当前预览</p>
               <h2 className="font-serif text-3xl text-paper">{previewBuilding?.name ?? '平台示例模型'}</h2>
               <p className="text-xs uppercase tracking-[0.22em] text-gold">
-                {previewBuilding ? `${previewBuilding.location} · ${previewBuilding.dynasty}` : 'BONSAI SAMPLE SPLAT'}
+                {previewBuilding ? `${previewBuilding.location} · ${previewBuilding.dynasty}` : '平台示例模型'}
               </p>
             </div>
             <div className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-gold">
-              Live View
+              可预览
             </div>
           </div>
 
           <p className="text-sm leading-relaxed text-paper/65">
             {previewBuilding
               ? previewBuilding.description
-              : '当前展示的是平台内置的示例模型，用来验证前端可视化和交互链路。'}
+              : '当前展示的是平台内置的示例模型，你可以用鼠标拖拽观察细节。'}
           </p>
 
           <div className="grid grid-cols-3 gap-3 text-center">
@@ -177,7 +177,7 @@ export default function ExplorePage() {
               </h1>
               <div className="h-px w-12 bg-cinnabar" />
               <p className="text-xs font-light tracking-[0.2em] text-paper/40">
-                FOUND {filtered.length} ARCHITECTURAL GENES
+                共找到 {filtered.length} 个建筑档案
               </p>
             </div>
 
@@ -190,7 +190,7 @@ export default function ExplorePage() {
 
             <div className="flex gap-2">
               {[
-                { key: 'all', label: '全部数据' },
+                { key: 'all', label: '全部档案' },
                 { key: 'ready', label: '已完成' },
                 { key: 'pending', label: '待重建' },
               ].map(({ key, label }) => {
@@ -215,7 +215,7 @@ export default function ExplorePage() {
 
           <div className="custom-scrollbar flex-1 overflow-y-auto px-8 pb-12">
             <div className="space-y-6">
-              {loading && <div className="py-10 text-xs uppercase tracking-widest text-paper/30">Loading buildings...</div>}
+              {loading && <div className="py-10 text-xs tracking-widest text-paper/30">正在加载建筑档案...</div>}
               {error && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
               {filtered.map((building) => (
                 <div

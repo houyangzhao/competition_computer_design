@@ -128,7 +128,7 @@ export default function ContributePage() {
       >
         <span className="text-4xl">📷</span>
         <p className="text-stone-300">点击或拖拽上传你的众包照片</p>
-        <p className="text-sm text-stone-600">支持批量上传，当前版本要求登录后才能正式提交众包贡献。</p>
+        <p className="text-sm text-stone-600">支持批量上传。登录后提交的照片会加入这个公共项目。</p>
         <input
           ref={fileInputRef}
           type="file"
