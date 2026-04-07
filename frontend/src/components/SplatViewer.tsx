@@ -84,10 +84,29 @@ export default function SplatViewer({
         camera.position.set(...initialCameraPosition)
         camera.lookAt(new THREE.Vector3(...initialCameraLookAt))
 
-        // ── 3. 原生 Pointer Lock + 自定义旋转 ──────────────────────
+        // ── 3. 原生 Pointer Lock + 绝对角度旋转 ──────────────────────
+        // 用绝对 yaw/pitch 角重建 quaternion，避免增量叠加导致的 roll 漂移。
+        // 公式：Q = Q_yaw(totalYaw) * Q0 * Q_pitch(totalPitch)
+        //   - Q0：初始相机方向（camera.up + lookAt 对齐后）
+        //   - Q_yaw：绕场景 up 向量的世界空间偏航
+        //   - Q_pitch：绕初始 right 轴（本地 [1,0,0]）的俯仰
         const SENSITIVITY = 0.002
+        const MAX_PITCH = Math.PI / 2 - 0.05
         const upVec = new THREE.Vector3(...cameraUp).normalize()
+        const Q0 = camera.quaternion.clone()   // 初始相机方向，只捕获一次
+        let totalYaw = 0
+        let totalPitch = 0
         let isLocked = false
+
+        const Q_yaw   = new THREE.Quaternion()
+        const Q_pitch = new THREE.Quaternion()
+
+        const applyRotation = () => {
+          Q_yaw.setFromAxisAngle(upVec, totalYaw)
+          Q_pitch.setFromAxisAngle(new THREE.Vector3(1, 0, 0), totalPitch)
+          // Q_yaw * Q0 * Q_pitch
+          camera.quaternion.copy(Q0).premultiply(Q_yaw).multiply(Q_pitch)
+        }
 
         const onPointerLockChange = () => {
           isLocked = document.pointerLockElement === renderer.domElement
@@ -95,25 +114,11 @@ export default function SplatViewer({
         }
         document.addEventListener('pointerlockchange', onPointerLockChange)
 
-        // 鼠标旋转：水平→绕场景 up 偏航，垂直→绕相机本地 right 俯仰
-        const tmpRight = new THREE.Vector3()
-        const yawQuat  = new THREE.Quaternion()
-        const pitchQuat = new THREE.Quaternion()
-
         const onMouseMove = (e: MouseEvent) => {
           if (!isLocked) return
-          // Yaw: 绕场景 up 轴旋转（保证左右是真正的水平转头）
-          yawQuat.setFromAxisAngle(upVec, -e.movementX * SENSITIVITY)
-          camera.quaternion.premultiply(yawQuat)
-          // Pitch: 绕相机当前 right 轴旋转，限制俯仰角防止翻转
-          tmpRight.set(1, 0, 0).applyQuaternion(camera.quaternion)
-          const pitchDelta = -e.movementY * SENSITIVITY
-          // 计算当前仰角（相机朝向与 up 平面的夹角）
-          const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
-          const currentPitch = Math.asin(THREE.MathUtils.clamp(fwd.dot(upVec), -1, 1))
-          const newPitch = THREE.MathUtils.clamp(currentPitch + pitchDelta, -Math.PI / 2 + 0.05, Math.PI / 2 - 0.05)
-          pitchQuat.setFromAxisAngle(tmpRight, newPitch - currentPitch)
-          camera.quaternion.multiply(pitchQuat)
+          totalYaw   -= e.movementX * SENSITIVITY
+          totalPitch  = THREE.MathUtils.clamp(totalPitch - e.movementY * SENSITIVITY, -MAX_PITCH, MAX_PITCH)
+          applyRotation()
         }
         document.addEventListener('mousemove', onMouseMove)
 

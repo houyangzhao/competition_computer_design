@@ -70,7 +70,7 @@ else
   nohup bash -lc "
     cd '$FRONTEND_DIR'
     export PATH='${NODE_PATH_PREFIX}${PATH}'
-    exec npm run dev -- --host 127.0.0.1 --port 5173
+    exec npm run dev -- --host 127.0.0.1 --port 6006
   " >"$FRONTEND_LOG" 2>&1 < /dev/null &
   echo $! >"$FRONTEND_PID_FILE"
   echo "Frontend started on http://127.0.0.1:5173"
