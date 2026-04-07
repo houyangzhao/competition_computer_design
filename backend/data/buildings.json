@@ -14,8 +14,8 @@
     "type": "public",
     "status": "ready",
     "cameraSettings": {
-      "up": [0.13, -0.957, 0.259],
-      "position": [-1.215, 0.404, 0.501],
+      "up": [-0.033, -0.963, -0.266],
+      "position": [0.799, 0.267, -2.953],
       "lookAt": [0.0, 0.0, 0.0]
     }
   },
@@ -41,130 +41,22 @@
   },
   {
     "id": "bonsai",
-    "name": "禅意盆景（室内场景）",
+    "name": "火车",
     "dynasty": "现代",
     "location": "室内展示场景",
     "coordinates": [
       116.3974,
       39.9163
     ],
-    "description": "来自Mip-NeRF 360标准基准数据集的室内盆景场景，展示3D Gaussian Splatting在室内精细物体重建方面的能力。场景包含复杂的枝叶细节与光影变化，是3DGS算法精度的经典测试用例。",
+    "description": "来自Mip-NeRF 360标准基准数据集的火车场景，展示3D Gaussian Splatting在室内精细物体重建方面的能力。",
     "modelPath": "/models/bonsai.splat",
     "coverImage": null,
     "type": "public",
     "status": "ready",
     "cameraSettings": {
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "position": [
-        0,
-        1,
-        3
-      ],
-      "lookAt": [
-        0,
-        0,
-        0
-      ]
-    }
-  },
-  {
-    "id": "church",
-    "name": "乡村教堂（外景）",
-    "dynasty": "近代",
-    "location": "欧洲",
-    "coordinates": [
-      10.0,
-      51.0
-    ],
-    "description": "欧洲乡村教堂外景重建，来自公开3DGS演示数据集。展示3D Gaussian Splatting对石砌建筑、尖顶结构及植被的重建效果，模型轻量（约27万高斯椭球），加载流畅。",
-    "modelPath": "/models/church.splat",
-    "coverImage": null,
-    "type": "public",
-    "status": "ready",
-    "cameraSettings": {
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "position": [
-        0,
-        2,
-        13
-      ],
-      "lookAt": [
-        0,
-        0,
-        0
-      ]
-    }
-  },
-  {
-    "id": "st-pauls",
-    "name": "圣保罗大教堂",
-    "dynasty": "近代",
-    "location": "英国伦敦",
-    "coordinates": [
-      -0.0983,
-      51.5138
-    ],
-    "description": "英国伦敦圣保罗大教堂外景3DGS重建，来自公开演示数据集。圣保罗大教堂始建于1675年，其标志性穹顶是世界著名建筑地标之一，本模型真实呈现巴洛克式建筑风格。",
-    "modelPath": "/models/st_pauls.splat",
-    "coverImage": null,
-    "type": "public",
-    "status": "ready",
-    "cameraSettings": {
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "position": [
-        0,
-        5,
-        41
-      ],
-      "lookAt": [
-        0,
-        0,
-        0
-      ]
-    }
-  },
-  {
-    "id": "taj-mahal",
-    "name": "泰姬陵",
-    "dynasty": "近代",
-    "location": "印度阿格拉",
-    "coordinates": [
-      78.0421,
-      27.1751
-    ],
-    "description": "印度泰姬陵3DGS重建，来自公开演示数据集。泰姬陵建于1632—1653年，是莫卧儿帝国建筑的巅峰之作，被列为世界文化遗产。本模型体量轻巧（约13万高斯椭球），展示3DGS对白色大理石建筑的精细还原。",
-    "modelPath": "/models/taj_mahal.splat",
-    "coverImage": null,
-    "type": "public",
-    "status": "ready",
-    "cameraSettings": {
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "position": [
-        0,
-        5,
-        40
-      ],
-      "lookAt": [
-        0,
-        0,
-        0
-      ]
+      "up": [0, -1, 0],
+      "position": [0.24, 0.12, 2.96],
+      "lookAt": [-0.7, -0.05, 0.15]
     }
   },
   {
@@ -217,10 +109,10 @@
       39.9163
     ],
     "description": "太和殿俗称金銮殿，是明清两代皇帝举行重大典礼的场所，也是中国古建筑数字化展示的代表性对象。",
-    "modelPath": "/models/bonsai.splat",
+    "modelPath": null,
     "coverImage": null,
     "type": "public",
-    "status": "ready",
+    "status": "pending",
     "ownerId": null,
     "sourceJobId": null,
     "contributionCount": 12,

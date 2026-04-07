@@ -185,8 +185,16 @@ echo ""
 echo "[转换] PLY -> .splat..."
 SPLAT_PATH="$SCENE_DIR/${SCENE_NAME}.splat"
 
-"$PYTHON_BIN" "$CONVERT_SCRIPT" "$PLY_PATH" "$SPLAT_PATH" --transform outdoor_arch \
-    --min-opacity 0.02 --max-scale 0.1
+# 先无裁剪转换，如果文件 > 50MB 再用 prune 参数重新转换
+"$PYTHON_BIN" "$CONVERT_SCRIPT" "$PLY_PATH" "$SPLAT_PATH" --transform outdoor_arch
+
+SPLAT_SIZE_MB=$(du -m "$SPLAT_PATH" | cut -f1)
+MAX_SPLAT_MB="${MAX_SPLAT_MB:-50}"
+if [ "$SPLAT_SIZE_MB" -gt "$MAX_SPLAT_MB" ]; then
+    echo "  ⚠ 文件过大（${SPLAT_SIZE_MB}MB > ${MAX_SPLAT_MB}MB），启用裁剪..."
+    "$PYTHON_BIN" "$CONVERT_SCRIPT" "$PLY_PATH" "$SPLAT_PATH" --transform outdoor_arch \
+        --min-opacity 0.02 --max-scale 0.1
+fi
 
 echo "  ✅ 转换完成: $SPLAT_PATH ($(du -sh "$SPLAT_PATH" | cut -f1))"
 

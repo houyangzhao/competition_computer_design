@@ -9,8 +9,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # backend/
 REPO_DIR = BASE_DIR.parent
 DATA_DIR = BASE_DIR / "data"
 STORAGE_DIR = BASE_DIR / "storage"
-CONTRIBUTIONS_ROOT = STORAGE_DIR / "contributions"
-
 # 大文件存储：优先使用 ZHUYI_DATA_DIR（数据盘），否则退回 backend/storage/
 _data_dir_env = os.environ.get("ZHUYI_DATA_DIR", "").strip()
 _DATA_DISK = Path(_data_dir_env) if _data_dir_env else None
@@ -18,10 +16,12 @@ if _DATA_DISK and _DATA_DISK.parent.is_dir():
     JOBS_ROOT = _DATA_DISK / "jobs"
     GENERATED_DIR = _DATA_DISK / "generated"
     MODELS_DIR = _DATA_DISK / "models"
+    CONTRIBUTIONS_ROOT = _DATA_DISK / "contributions"
 else:
     JOBS_ROOT = STORAGE_DIR / "jobs"
     GENERATED_DIR = STORAGE_DIR / "generated"
     MODELS_DIR = STORAGE_DIR / "models"
+    CONTRIBUTIONS_ROOT = STORAGE_DIR / "contributions"
 GENERATED_COVERS_DIR = GENERATED_DIR / "covers"
 
 RECONSTRUCTION_DIR = REPO_DIR / "reconstruction"
