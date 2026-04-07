@@ -22,10 +22,10 @@ export default function ReconstructProgress({ job }: { job: ReconstructionJob })
       : job.status === 'failed'
       ? job.error || '重建失败，请稍后重试。'
       : job.status === 'extracting'
-      ? '系统正在筛选有效照片并准备输入数据。'
+      ? '系统正在筛选清晰、连续的照片。'
       : job.status === 'matching'
-      ? '系统正在估计相机位姿并进行图像匹配。'
-      : '系统正在训练三维表示，请稍等片刻。'
+      ? '系统正在对齐不同角度的照片。'
+      : '系统正在生成可浏览的三维模型，请稍等片刻。'
 
   return (
     <div className="flex flex-col items-center gap-8 py-12">

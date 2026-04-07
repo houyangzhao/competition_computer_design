@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import MapLocationPicker, { type SelectedLocation } from '../components/MapLocationPicker'
 import ReconstructProgress from '../components/ReconstructProgress'
 import SplatViewer from '../components/SplatViewer'
 import { useAuth } from '../context/useAuth'
@@ -7,6 +8,7 @@ import { createAdminProject, deleteAdminProject, fetchBuildings, fetchJobStatus,
 import type { AdminProjectInput, Building, ReconstructionJob } from '../types'
 
 type Step = 'upload' | 'processing' | 'done'
+type AdminMode = 'create' | 'delete'
 
 const STORAGE_KEY = 'zhuy_reconstruction_session'
 
@@ -79,6 +81,7 @@ export default function ReconstructPage() {
   const [adminError, setAdminError] = useState<string | null>(null)
   const [adminSuccess, setAdminSuccess] = useState<string | null>(null)
   const [adminSubmitting, setAdminSubmitting] = useState(false)
+  const [adminMode, setAdminMode] = useState<AdminMode>('create')
   const [deletingProjectId, setDeletingProjectId] = useState<string>('')
   const [projectForm, setProjectForm] = useState<AdminProjectInput>({
     name: '',
@@ -204,6 +207,15 @@ export default function ReconstructPage() {
     }
   }
 
+  function handleLocationConfirm(location: SelectedLocation) {
+    setProjectForm((current) => ({
+      ...current,
+      location: location.displayName,
+      latitude: location.latitude,
+      longitude: location.longitude,
+    }))
+  }
+
   async function handleDeleteProject() {
     if (!token || !deletingProjectId) return
 
@@ -278,131 +290,192 @@ export default function ReconstructPage() {
     clearPersistedState()
   }
 
-  return (
-    <div className="mx-auto max-w-3xl px-8 pb-16 pt-20">
-      <h1 className="mb-2 text-3xl font-bold text-stone-100">上传重建</h1>
-      <p className="mb-4 text-stone-500">
-        上传同一座建筑的多角度照片，系统会自动启动重建任务。现在模型重建能力已经绑定账号权限，未登录时不能直接调用。
-      </p>
-      <p className="mb-10 text-sm text-stone-600">
-        {user ? `当前登录账号：${user.username}，重建完成后可以直接保存到“我的模型”。` : '请先注册并登录，再上传照片启动重建任务。'}
-      </p>
+  const isAdmin = user?.role === 'admin'
 
-      {user?.role === 'admin' && (
-        <div className="mb-10 rounded-3xl border border-stone-800 bg-stone-900/70 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur">
-          <div className="mb-5 flex items-start justify-between gap-4">
+  return (
+    <div className={`mx-auto px-6 ${isAdmin ? 'max-w-[1500px] pb-8 pt-20' : 'max-w-4xl pb-16 pt-20'}`}>
+      <h1 className="mb-2 text-3xl font-bold text-stone-100">{isAdmin ? '众包项目管理' : '上传重建'}</h1>
+      <p className="mb-4 text-stone-500">
+        {isAdmin ? '创建新的公共众包项目，或删除不再收集照片的项目。' : '上传同一座建筑的多角度照片，我们会为你生成一个可预览的三维模型。'}
+      </p>
+      {!isAdmin && (
+        <p className="mb-10 text-sm text-stone-600">
+          {user ? `当前账号：${user.username}。重建完成后，你可以把结果保存到“我的模型”。` : '登录后即可开始上传，并在完成后保存到自己的模型库。'}
+        </p>
+      )}
+
+      {isAdmin && (
+        <div className="rounded-3xl border border-stone-800 bg-stone-900/75 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.32)] backdrop-blur">
+          <div className="mb-4 flex items-start justify-between gap-5">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-cinnabar/70">Admin Controls</p>
-              <h2 className="mt-2 font-serif text-2xl text-stone-100">众包项目管理</h2>
-              <p className="mt-2 text-sm leading-relaxed text-stone-500">
-                管理员可在这里维护探索页的众包项目。普通用户界面保持不变，这些入口只在管理员账号下显示。
+              <p className="text-xs tracking-[0.28em] text-cinnabar/70">项目维护</p>
+              <h2 className="mt-1 font-serif text-2xl text-stone-100">众包项目管理</h2>
+              <p className="mt-2 text-sm leading-relaxed text-stone-400">
+                在这里添加需要大家共同补拍的建筑，也可以下架已经不再收集照片的项目。
               </p>
             </div>
             <button
               onClick={() => void reloadProjects()}
-              className="rounded-full border border-stone-700 px-4 py-2 text-xs tracking-[0.18em] text-stone-300 transition-colors hover:border-amber-500 hover:text-amber-300"
+              className="rounded-full border border-stone-700 px-5 py-2.5 text-sm tracking-[0.16em] text-stone-300 transition-colors hover:border-amber-500 hover:text-amber-300"
             >
               刷新项目
             </button>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4 rounded-2xl border border-white/5 bg-black/10 p-5">
-              <div>
-                <p className="text-sm font-semibold text-stone-100">新增项目</p>
-                <p className="mt-1 text-xs text-stone-500">创建一个新的公共众包项目，进入探索页后用户就能看到。</p>
-              </div>
-
-              <input
-                value={projectForm.name}
-                onChange={(event) => setProjectForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="项目名称"
-                className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  value={projectForm.dynasty}
-                  onChange={(event) => setProjectForm((current) => ({ ...current, dynasty: event.target.value }))}
-                  placeholder="朝代"
-                  className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-                />
-                <input
-                  value={projectForm.location}
-                  onChange={(event) => setProjectForm((current) => ({ ...current, location: event.target.value }))}
-                  placeholder="地点"
-                  className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  type="number"
-                  value={projectForm.latitude}
-                  onChange={(event) => setProjectForm((current) => ({ ...current, latitude: Number(event.target.value) || 0 }))}
-                  placeholder="纬度"
-                  className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  value={projectForm.longitude}
-                  onChange={(event) => setProjectForm((current) => ({ ...current, longitude: Number(event.target.value) || 0 }))}
-                  placeholder="经度"
-                  className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-              <textarea
-                value={projectForm.description}
-                onChange={(event) => setProjectForm((current) => ({ ...current, description: event.target.value }))}
-                placeholder="项目简介"
-                rows={4}
-                className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
-              />
-              <button
-                onClick={() => void handleCreateProject()}
-                disabled={adminSubmitting}
-                className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-stone-950 transition-colors hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500"
-              >
-                {adminSubmitting ? '处理中...' : '新增众包项目'}
-              </button>
-            </div>
-
-            <div className="space-y-4 rounded-2xl border border-white/5 bg-black/10 p-5">
-              <div>
-                <p className="text-sm font-semibold text-stone-100">删除项目</p>
-                <p className="mt-1 text-xs text-stone-500">只删除公共众包项目，不影响普通用户当前的浏览体验。</p>
-              </div>
-
-              <select
-                value={deletingProjectId}
-                onChange={(event) => setDeletingProjectId(event.target.value)}
-                className="w-full rounded-xl border border-stone-700 bg-stone-950 px-4 py-3 text-sm text-stone-100 focus:border-amber-500 focus:outline-none"
-              >
-                <option value="">选择要删除的项目</option>
-                {publicProjects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name} · {project.location}
-                  </option>
-                ))}
-              </select>
-
-              <div className="rounded-2xl border border-stone-800 bg-stone-950/70 px-4 py-3 text-xs leading-relaxed text-stone-500">
-                当前公共项目数：{publicProjects.length}。删除后探索页会自动少一条记录，普通用户不需要额外适应新的操作入口。
-              </div>
-
-              <button
-                onClick={() => void handleDeleteProject()}
-                disabled={adminSubmitting || !deletingProjectId}
-                className="w-full rounded-xl border border-red-500/20 bg-red-500/10 py-3 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:border-stone-800 disabled:bg-stone-900 disabled:text-stone-600"
-              >
-                {adminSubmitting ? '处理中...' : '删除选中项目'}
-              </button>
-            </div>
+          <div className="mb-4 grid max-w-xl grid-cols-2 gap-2 rounded-2xl border border-stone-800 bg-stone-950/70 p-2">
+            {[
+              { key: 'create', label: '新增项目' },
+              { key: 'delete', label: '删除项目' },
+            ].map((item) => {
+              const active = adminMode === item.key
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setAdminMode(item.key as AdminMode)}
+                  className={`rounded-xl px-4 py-2.5 font-serif text-base transition-colors ${
+                    active ? 'bg-amber-500 text-stone-950' : 'text-stone-400 hover:bg-stone-900 hover:text-stone-100'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
           </div>
+
+          {adminMode === 'create' ? (
+            <div className="grid min-h-[540px] gap-5 rounded-2xl border border-white/5 bg-black/10 p-5 xl:grid-cols-[0.82fr_1.18fr]">
+              <div className="flex min-h-[500px] flex-col gap-4">
+                <div>
+                  <p className="font-serif text-2xl text-stone-100">新增众包项目</p>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-400">填写基础信息，在地图里定位建筑，用户就能在探索页参与补拍。</p>
+                </div>
+
+                <input
+                  value={projectForm.name}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="项目名称"
+                  className="w-full rounded-xl border border-stone-700 bg-stone-950 px-5 py-4 font-serif text-lg text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    value={projectForm.dynasty}
+                    onChange={(event) => setProjectForm((current) => ({ ...current, dynasty: event.target.value }))}
+                    placeholder="朝代"
+                    className="w-full rounded-xl border border-stone-700 bg-stone-950 px-5 py-4 font-serif text-base text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
+                  />
+                  <input
+                    value={projectForm.location}
+                    readOnly
+                    placeholder="地图确认后自动填写地点"
+                    className="w-full cursor-default rounded-xl border border-stone-700 bg-stone-950 px-5 py-4 font-serif text-base text-stone-100 placeholder-stone-600 focus:outline-none"
+                  />
+                </div>
+
+                <textarea
+                  value={projectForm.description}
+                  onChange={(event) => setProjectForm((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="项目简介"
+                  rows={7}
+                  className="custom-scrollbar min-h-40 flex-1 rounded-xl border border-stone-700 bg-stone-950 px-5 py-4 text-base leading-relaxed text-stone-100 placeholder-stone-600 focus:border-amber-500 focus:outline-none"
+                />
+                <button
+                  onClick={() => void handleCreateProject()}
+                  disabled={adminSubmitting}
+                  className="w-full rounded-xl bg-amber-500 py-4 text-base font-semibold text-stone-950 transition-colors hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500"
+                >
+                  {adminSubmitting ? '处理中...' : '新增众包项目'}
+                </button>
+              </div>
+
+              <MapLocationPicker
+                initialQuery={projectForm.location || projectForm.name}
+                selectedLocation={
+                  projectForm.latitude !== 0 || projectForm.longitude !== 0
+                    ? {
+                        displayName: projectForm.location,
+                        latitude: projectForm.latitude,
+                        longitude: projectForm.longitude,
+                      }
+                    : null
+                }
+                onConfirm={handleLocationConfirm}
+              />
+            </div>
+          ) : (
+            <div className="flex min-h-[540px] flex-col rounded-2xl border border-white/5 bg-black/10 p-5">
+              <div className="max-w-3xl">
+                <p className="font-serif text-2xl text-stone-100">删除众包项目</p>
+                <p className="mt-2 text-sm leading-relaxed text-stone-400">选择不再收集照片的项目，下架后探索页不会继续展示。</p>
+              </div>
+
+              <div className="mt-8 grid flex-1 gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="space-y-5">
+                  <select
+                    value={deletingProjectId}
+                    onChange={(event) => setDeletingProjectId(event.target.value)}
+                    className="custom-scrollbar w-full rounded-xl border border-stone-700 bg-stone-950 px-5 py-4 text-base text-stone-100 focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">选择要删除的项目</option>
+                    {publicProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name} · {project.location}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="rounded-2xl border border-stone-800 bg-stone-950/70 px-5 py-4 text-sm leading-relaxed text-stone-400">
+                    当前公共项目数：{publicProjects.length}。删除只会影响公共众包列表，不会删除用户自己的模型库。
+                  </div>
+
+                  <button
+                    onClick={() => void handleDeleteProject()}
+                    disabled={adminSubmitting || !deletingProjectId}
+                    className="w-full rounded-xl border border-red-500/20 bg-red-500/10 py-4 text-base font-semibold text-red-300 transition-colors hover:bg-red-500/15 disabled:border-stone-800 disabled:bg-stone-900 disabled:text-stone-600"
+                  >
+                    {adminSubmitting ? '处理中...' : '删除选中项目'}
+                  </button>
+                </div>
+
+                <div className="custom-scrollbar max-h-[360px] overflow-y-auto rounded-2xl border border-stone-800 bg-stone-950/70 p-3">
+                  {publicProjects.length === 0 ? (
+                    <div className="flex h-full min-h-72 items-center justify-center rounded-xl border border-dashed border-stone-800 text-sm text-stone-600">
+                      暂无公共众包项目
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {publicProjects.map((project) => {
+                        const active = deletingProjectId === project.id
+                        return (
+                          <button
+                            key={project.id}
+                            type="button"
+                            onClick={() => setDeletingProjectId(project.id)}
+                            className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                              active
+                                ? 'border-red-500/40 bg-red-500/10 text-stone-100'
+                                : 'border-stone-800 bg-black/30 text-stone-400 hover:border-stone-700 hover:text-stone-200'
+                            }`}
+                          >
+                            <span className="block font-serif text-base text-stone-100">{project.name}</span>
+                            <span className="mt-1 block text-xs leading-relaxed text-stone-500">{project.location}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {adminError && <p className="mt-4 text-sm text-red-400">{adminError}</p>}
           {adminSuccess && <p className="mt-4 text-sm text-emerald-400">{adminSuccess}</p>}
         </div>
       )}
 
+      {!isAdmin && (
+        <>
       <div className="mb-10 flex items-center gap-3">
         {['上传照片', '自动重建', '查看结果'].map((label, idx) => {
           const stepMap: Step[] = ['upload', 'processing', 'done']
@@ -450,7 +523,7 @@ export default function ReconstructPage() {
           >
             <span className="text-4xl">📷</span>
             <p className="text-sm text-stone-400">点击或拖拽上传照片</p>
-            <p className="text-xs text-stone-600">建议至少上传 3 张 JPG/PNG，照片越连续、重叠越充分，重建结果越稳定。</p>
+            <p className="text-xs text-stone-600">请上传同一座建筑的连续照片，尽量覆盖正面、侧面、转角和屋檐细节，至少 3 张。</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -562,6 +635,8 @@ export default function ReconstructPage() {
             )}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

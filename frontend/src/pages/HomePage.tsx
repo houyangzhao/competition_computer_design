@@ -100,32 +100,35 @@ function ThreeReconstructionBg() {
     camera.position.z = 1100 // 拉开距离，配合更大的点
     camera.position.y = 150
 
-    // 加载精炼数据
     fetch('/models/wumen_points.json')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) return null
+        return res.json()
+      })
       .then(data => {
+        if (!Array.isArray(data) || data.length === 0) return
         const dataSize = data.length
         const scale = 110.0 // 显著增加模型缩放，使其填满背景
 
         for (let i = 0; i < count; i++) {
           const p = data[i % dataSize]
-          // 这里的 y 轴偏移是为了让建筑显示在标题下方/背景处，不被遮挡
+          if (!Array.isArray(p) || p.length < 6) continue
           targetPositions[i * 3] = p[0] * scale
-          targetPositions[i * 3 + 1] = -p[1] * scale - 100 
+          targetPositions[i * 3 + 1] = -p[1] * scale - 100
           targetPositions[i * 3 + 2] = p[2] * scale
-          
-          // 色彩饱和度再次拉高
+
           colors[i * 3] = Math.min(1.0, (p[3] / 255) * 1.5)
           colors[i * 3 + 1] = Math.min(1.0, (p[4] / 255) * 1.5)
           colors[i * 3 + 2] = Math.min(1.0, (p[5] / 255) * 1.5)
         }
         geometry.attributes.color.needsUpdate = true
       })
+      .catch(() => {})
 
     // --- Animation Loop ---
     let time = 0
     let scanY = -800
-    
+
     const animate = () => {
       requestAnimationFrame(animate)
       time += 0.005

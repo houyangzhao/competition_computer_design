@@ -89,6 +89,13 @@ export async function fetchMyBuildings(token: string): Promise<Building[]> {
   })
 }
 
+export async function deleteMyBuilding(buildingId: string, token: string): Promise<{ ok: boolean; deletedId: string }> {
+  return requestJson(`${BASE}/my/buildings/${buildingId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
 export async function fetchBuilding(id: string, token?: string | null): Promise<Building> {
   return requestJson(`${BASE}/buildings/${id}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,

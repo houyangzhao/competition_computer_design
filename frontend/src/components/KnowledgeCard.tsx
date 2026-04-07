@@ -1,6 +1,5 @@
 import type { KnowledgeItem } from '../types'
 
-// 预留知识卡片组件 — 数据后续从 API 加载
 export default function KnowledgeCard({ item }: { item: KnowledgeItem }) {
   return (
     <div className="bg-stone-900 border border-stone-800 rounded-lg p-4">
