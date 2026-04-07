@@ -197,7 +197,69 @@ def center_scene(data: dict) -> dict:
     return data
 
 
-def convert(ply_path: str, splat_path: str, transform: str = "x180", center: bool = True) -> None:
+def prune_gaussians(data: dict, min_opacity: float = 0.004,
+                     max_scale: float | None = None,
+                     max_distance: float | None = None,
+                     max_gaussians: int | None = None) -> dict:
+    """
+    多策略裁剪低贡献高斯体。
+
+    - min_opacity:  不透明度低于此值的高斯体被移除（默认 1/255 ≈ 0.004）
+    - max_scale:    三轴尺度的最大值超过此阈值的被移除（过大的背景填充噪声）
+    - max_distance: 距场景中心距离超过此值的被移除（漂浮噪点）
+    - max_gaussians: 按不透明度排序后只保留前 N 个（硬上限）
+    """
+    n = len(data["xyz"])
+    mask = np.ones(n, dtype=bool)
+
+    # 1) 不透明度裁剪
+    opacity_mask = data["opacity"] > min_opacity
+    cut = n - opacity_mask.sum()
+    if cut > 0:
+        print(f"  [裁剪] 不透明度 < {min_opacity:.3f}: 移除 {cut:,}")
+    mask &= opacity_mask
+
+    # 2) 尺度裁剪
+    if max_scale is not None:
+        scale_max = data["scale"].max(axis=1)
+        scale_mask = scale_max < max_scale
+        cut = mask.sum() - (mask & scale_mask).sum()
+        if cut > 0:
+            print(f"  [裁剪] 尺度 > {max_scale:.4f}: 移除 {cut:,}")
+        mask &= scale_mask
+
+    # 3) 距离裁剪（基于高不透明度点的中位中心）
+    if max_distance is not None:
+        top_n = max(1, n // 10)
+        top_idx = np.argsort(-data["opacity"])[:top_n]
+        center = np.median(data["xyz"][top_idx], axis=0)
+        dist = np.linalg.norm(data["xyz"] - center, axis=1)
+        dist_mask = dist < max_distance
+        cut = mask.sum() - (mask & dist_mask).sum()
+        if cut > 0:
+            print(f"  [裁剪] 距中心 > {max_distance:.1f}: 移除 {cut:,}")
+        mask &= dist_mask
+
+    data = {k: v[mask] for k, v in data.items()}
+
+    # 4) 数量硬上限（按不透明度保留 top N）
+    if max_gaussians is not None and len(data["xyz"]) > max_gaussians:
+        order = np.argsort(-data["opacity"])[:max_gaussians]
+        order = np.sort(order)  # 保持空间局部性
+        before = len(data["xyz"])
+        data = {k: v[order] for k, v in data.items()}
+        print(f"  [裁剪] 数量上限 {max_gaussians:,}: {before:,} → {len(data['xyz']):,}")
+
+    kept = len(data["xyz"])
+    removed = n - kept
+    pct = removed / n * 100 if n > 0 else 0
+    print(f"  裁剪总计: {n:,} → {kept:,} (移除 {removed:,}, {pct:.1f}%)")
+    return data
+
+
+def convert(ply_path: str, splat_path: str, transform: str = "x180", center: bool = True,
+            min_opacity: float = 0.004, max_scale: float | None = None,
+            max_distance: float | None = None, max_gaussians: int | None = None) -> None:
     print(f"读取 PLY: {ply_path}")
     data = load_gaussians(ply_path)
     n = len(data["xyz"])
@@ -206,15 +268,12 @@ def convert(ply_path: str, splat_path: str, transform: str = "x180", center: boo
     print("按不透明度排序...")
     data = sort_by_opacity(data)
 
-    # 过滤极低不透明度的 Gaussian
-    threshold = 1.0 / 255.0
-    mask = data["opacity"] > threshold
-    filtered_n = mask.sum()
-    if filtered_n < n:
-        print(f"  过滤低不透明度 Gaussians: {n:,} → {filtered_n:,}")
-        data = {k: v[mask] for k, v in data.items()}
+    # 多策略裁剪
+    print("裁剪低贡献高斯体...")
+    data = prune_gaussians(data, min_opacity=min_opacity, max_scale=max_scale,
+                           max_distance=max_distance, max_gaussians=max_gaussians)
 
-    # 平移场景中心到原点（让 viewer 初始摄像机对着场景）
+    # 平移场景中心到原点
     if center:
         data = center_scene(data)
 
@@ -228,8 +287,9 @@ def convert(ply_path: str, splat_path: str, transform: str = "x180", center: boo
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(raw)
 
+    final_n = len(data["xyz"])
     size_mb = len(raw) / 1024 / 1024
-    print(f"✅ 输出: {splat_path} ({size_mb:.1f} MB, {filtered_n:,} Gaussians)")
+    print(f"✅ 输出: {splat_path} ({size_mb:.1f} MB, {final_n:,} Gaussians)")
 
 
 if __name__ == "__main__":
@@ -247,5 +307,31 @@ if __name__ == "__main__":
         action="store_true",
         help="不自动将场景中心平移到原点",
     )
+    parser.add_argument(
+        "--min-opacity",
+        type=float,
+        default=0.004,
+        help="不透明度裁剪阈值（默认 0.004；推荐精简用 0.05~0.15）",
+    )
+    parser.add_argument(
+        "--max-scale",
+        type=float,
+        default=None,
+        help="单轴尺度上限，超过的视为背景噪声（推荐 0.03~0.1）",
+    )
+    parser.add_argument(
+        "--max-distance",
+        type=float,
+        default=None,
+        help="距场景中心最大距离，超过的视为漂浮噪点",
+    )
+    parser.add_argument(
+        "--max-gaussians",
+        type=int,
+        default=None,
+        help="高斯体数量硬上限，按不透明度保留 top N（如 2000000）",
+    )
     args = parser.parse_args()
-    convert(args.input, args.output, args.transform, center=not args.no_center)
+    convert(args.input, args.output, args.transform, center=not args.no_center,
+            min_opacity=args.min_opacity, max_scale=args.max_scale,
+            max_distance=args.max_distance, max_gaussians=args.max_gaussians)

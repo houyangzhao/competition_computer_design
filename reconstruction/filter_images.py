@@ -69,6 +69,31 @@ def get_gps(image_path: Path):
     return None
 
 
+def _copy_and_normalize(src: Path, dst: Path):
+    """复制图片，应用 EXIF 旋转，并统一为横向（宽>=高）。
+
+    COLMAP 的 single_camera 模式要求所有图片分辨率一致，
+    横竖拍混合会导致竖拍被跳过。统一旋转为横向可避免此问题。
+    """
+    if not HAS_PIL:
+        shutil.copy2(src, dst)
+        return
+    try:
+        from PIL import ImageOps
+        img = Image.open(src)
+        img = ImageOps.exif_transpose(img)
+        if img is None:
+            shutil.copy2(src, dst)
+            return
+        # 竖拍转横拍，确保所有图片分辨率一致
+        w, h = img.size
+        if h > w:
+            img = img.rotate(90, expand=True)
+        img.save(dst, quality=95, exif=b"")
+    except Exception:
+        shutil.copy2(src, dst)
+
+
 def scan_gps(src_dir: Path):
     """扫描所有图像的 GPS，打印统计信息帮助确定范围"""
     images = sorted(src_dir.glob("**/*.[jJ][pP][gG]")) + \
@@ -128,7 +153,7 @@ def filter_by_gps(src_dir: Path, dst_dir: Path,
         print(f"均匀采样至 {len(matched)} 张（limit={limit}）")
 
     for p in matched:
-        shutil.copy2(p, dst_dir / p.name)
+        _copy_and_normalize(p, dst_dir / p.name)
 
     print(f"✅ 已复制 {len(matched)} 张图像到 {dst_dir}")
     return len(matched)
@@ -170,7 +195,7 @@ def main():
         step = max(1, len(images) // args.limit)
         selected = images[::step][:args.limit]
         for p in selected:
-            shutil.copy2(p, dst / p.name)
+            _copy_and_normalize(p, dst / p.name)
         print(f"✅ 均匀采样 {len(selected)} 张图像到 {dst}")
         return
 

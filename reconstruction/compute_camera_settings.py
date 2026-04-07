@@ -135,6 +135,8 @@ def compute(scene_dir: Path, iterations: int):
     }
     print("\ncameraSettings (粘贴到 buildings.json):")
     print(json.dumps(settings, indent=2))
+    # Machine-readable single-line output for subprocess parsing
+    print(f"\n__CAMERA_JSON__={json.dumps(settings)}")
     return settings
 
 

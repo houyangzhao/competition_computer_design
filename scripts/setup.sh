@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 VENV_DIR="$PROJECT_ROOT/.venv"
@@ -35,8 +35,16 @@ python -m pip install -r "$BACKEND_DIR/requirements.txt"
   npm ci
 )
 
-mkdir -p "$BACKEND_DIR/storage" "$FRONTEND_DIR/public/generated/covers"
+# 基础目录（后端启动时会根据 ZHUYI_DATA_DIR 自动创建存储目录）
+mkdir -p "$BACKEND_DIR/storage" "$BACKEND_DIR/data"
 
-echo "Setup complete."
+echo "Web setup complete."
 echo "Python: $VENV_PYTHON"
 echo "Frontend deps: $FRONTEND_DIR/node_modules"
+
+# --gpu: 额外安装 COLMAP + 3D Gaussian Splatting（需要 CUDA 环境）
+if [[ "${1:-}" == "--gpu" ]]; then
+  echo ""
+  echo "Installing GPU reconstruction environment..."
+  bash "$PROJECT_ROOT/reconstruction/setup_gpu.sh"
+fi

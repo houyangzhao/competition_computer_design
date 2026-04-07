@@ -145,8 +145,14 @@ import struct, sys
 with open('$SCENE_DIR/sparse/0/images.bin','rb') as f:
     n = struct.unpack('<Q',f.read(8))[0]
 print(n)
-" 2>/dev/null || echo "?")
-    echo "  ✅ COLMAP 完成，注册图像: $IMG_REGISTERED 张"
+" 2>/dev/null || echo "0")
+    echo "  COLMAP 完成，注册图像: $IMG_REGISTERED / $IMG_COUNT 张"
+
+    if [ "$IMG_REGISTERED" -lt "$MIN_IMAGES" ] 2>/dev/null; then
+        echo "❌ COLMAP 注册图像数量不足（$IMG_REGISTERED < $MIN_IMAGES），照片重叠度可能不够"
+        echo "   建议：确保相邻照片之间有 70% 以上重叠，避免混合横拍和竖拍"
+        exit 1
+    fi
 fi
 
 # ── 3DGS 训练 ────────────────────────────────────────────────
@@ -157,6 +163,7 @@ cd "$GS_DIR"
 "$PYTHON_BIN" train.py \
     -s "$SCENE_DIR" \
     -m "$OUTPUT_DIR" \
+    -r 4 \
     --iterations "$ITERATIONS" \
     --position_lr_max_steps "$ITERATIONS" \
     --densify_until_iter $(( ITERATIONS * 2 / 3 )) \
@@ -178,7 +185,8 @@ echo ""
 echo "[转换] PLY -> .splat..."
 SPLAT_PATH="$SCENE_DIR/${SCENE_NAME}.splat"
 
-"$PYTHON_BIN" "$CONVERT_SCRIPT" "$PLY_PATH" "$SPLAT_PATH" --transform outdoor_arch
+"$PYTHON_BIN" "$CONVERT_SCRIPT" "$PLY_PATH" "$SPLAT_PATH" --transform outdoor_arch \
+    --min-opacity 0.02 --max-scale 0.1
 
 echo "  ✅ 转换完成: $SPLAT_PATH ($(du -sh "$SPLAT_PATH" | cut -f1))"
 

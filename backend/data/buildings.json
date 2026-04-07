@@ -188,6 +188,26 @@
     }
   },
   {
+    "id": "mudiao",
+    "name": "木雕艺术品",
+    "dynasty": "现代",
+    "location": "室内展示场景",
+    "coordinates": [
+      120.0,
+      30.0
+    ],
+    "description": "木雕艺术品3D重建，由39张实地照片经COLMAP位姿估计与3D Gaussian Splatting算法重建而成。训练10,000轮迭代，共7,960,037个高斯椭球，展示3DGS对细致木质工艺品的重建能力。",
+    "modelPath": "/models/mudiao.splat",
+    "coverImage": null,
+    "type": "public",
+    "status": "ready",
+    "cameraSettings": {
+      "up": [0.149, -0.007, -0.989],
+      "position": [3.912, -0.325, 0.06],
+      "lookAt": [0.0, 0.0, 0.0]
+    }
+  },
+  {
     "id": "forbidden-city",
     "name": "故宫太和殿",
     "dynasty": "明清",

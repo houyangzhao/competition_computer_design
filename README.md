@@ -1,65 +1,176 @@
 # 筑忆
 
-筑忆是一个面向古建筑数字化保护的 Web 项目。当前版本已经具备以下能力：
+面向古建筑数字化保护的 Web 平台。用户上传建筑照片，系统通过 3D Gaussian Splatting 自动重建三维模型，并提供在线浏览、AI 讲解、众包协作等功能。
 
-- 用户注册、登录和会话恢复
-- 公共建筑档案浏览与知识卡片展示
-- 探索页示例 `.splat` 三维可视化预览
-- 个人照片上传重建、任务轮询和结果预览
-- 重建结果保存到“我的模型”
+## 功能概览
+
+- 用户注册 / 登录 / 会话恢复
+- 公共建筑档案浏览与知识卡片
+- 3DGS 三维模型在线浏览（第一人称漫游）
+- 照片上传 → 自动 3DGS 重建 → 结果预览与保存
 - 公共项目众包照片上传
-- 建筑 AI 讲解问答接口，支持接入 DeepSeek
-- 开发环境下的 mock 重建模式，以及真实 GPU 管线自动切换
-- SQLite 持久化存储
+- 建筑 AI 讲解问答（DeepSeek）
+- GPU 任务排队（同时只运行一个重建任务）
+- mock 重建模式（无 GPU 时自动降级）
 
 ## 项目结构
 
-- `frontend/`: React 19 + TypeScript + Vite 前端
-- `backend/`: FastAPI 后端与 SQLite 数据存储
-- `reconstraction/`: 真实重建脚本、图片筛选与 `.splat` 转换工具
+```
+├── backend/
+│   ├── app/               FastAPI 应用包（config/auth/crud/chat/reconstruction/routes）
+│   ├── models.py          Pydantic 数据模型
+│   ├── data/              SQLite DB + 种子 JSON
+│   └── main.py            入口：from app import create_app
+├── frontend/              React 19 + TypeScript + Vite
+├── reconstruction/        COLMAP + 3DGS 重建脚本（独立 CLI 工具集）
+├── scripts/
+│   ├── setup.sh           安装依赖（--gpu 装重建环境）
+│   ├── start.sh           启动前后端
+│   └── stop.sh            停止前后端
+├── docs/                  文档
+├── presentation/          答辩材料
+├── .env                   运行时配置（不提交）
+└── .env.example           配置模板
+```
 
-## 本地启动
+---
 
-1. 进入项目目录：`cd competition_computer_design`
-2. 初始化依赖：`./setup_project.sh`
-3. 启动项目：`./start_project.sh`
-4. 停止项目：`./stop_project.sh`
+## 部署指南
 
-默认前端运行在 `http://127.0.0.1:5173`，后端运行在 `http://127.0.0.1:8000`。
+### 前置条件
 
-## 环境变量
+- Python 3.10+
+- Node.js 20+（脚本自带 v22 兜底）
+- （可选）NVIDIA GPU + CUDA 12.x + 编译好的 COLMAP（真实重建需要）
 
-可复制 `.env.example` 作为参考。最常用的是：
+### 第一步：克隆仓库
 
-- `ZHUYI_RECONSTRUCTION_MODE=mock`
-  纯本地开发时推荐，重建流程会自动使用示例模型走完整闭环。
-- `ZHUYI_RECONSTRUCTION_MODE=real`
-  强制走真实重建脚本，需要配置好 `gaussian-splatting` 环境。
-- `ZHUYI_GAUSSIAN_SPLATTING_DIR=/root/gaussian-splatting`
-  真实重建依赖目录。
-- `ZHUYI_AUTH_SECRET=change-me`
-  后端签发 token 的密钥。
-- `ZHUYI_SQLITE_PATH=/path/to/backend/data/zhuyi.db`
-  SQLite 数据库文件路径。
-- `DEEPSEEK_API_KEY=...`
-  配置后，建筑详情页的 AI 讲解会优先调用 DeepSeek；未配置时自动回退到本地知识库讲解。
-- `DEEPSEEK_MODEL=deepseek-chat`
-  默认使用 `deepseek-chat`，也可以改成 DeepSeek 官方支持的其他兼容模型。
+```bash
+git clone <repo-url>
+cd competition_computer_design
+```
 
-建议先执行 `cp .env.example .env`，然后在 `.env` 里补上自己的 `DEEPSEEK_API_KEY`。
+### 第二步：配置环境变量
 
-## 开发说明
+```bash
+cp .env.example .env
+vim .env   # 按需修改
+```
 
-- 后端当前默认使用 SQLite 存储用户、建筑、任务、众包和知识数据。
-- 仓库里保留的 `backend/data/*.json` 主要用于初始化种子数据和旧数据迁移。
-- 如果本机没有 GPU 管线，后端会在 `auto` 模式下自动降级到 mock 重建。
-- 前端构建依赖 Node.js 20+；仓库脚本会优先尝试系统 Node，不满足时使用 `/tmp/node-v22.14.0-linux-x64/bin` 作为兜底。
-- 启动脚本会自动加载项目根目录下的 `.env`，所以 DeepSeek 和重建相关变量都可以直接写在里面。
-- 为避免把模型资产直接提交到仓库，默认不会跟踪 `.splat` 文件；如果你想体验探索页示例预览，可自行放置一个本地示例模型到 `frontend/public/models/bonsai.splat`。
+关键变量说明：
 
-## 后续建议
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `ZHUYI_AUTH_SECRET` | JWT 签名密钥 | 任意随机字符串 |
+| `ZHUYI_DATA_DIR` | 大文件存储根目录。留空则存在 `backend/storage/` | `/root/autodl-tmp/zhuyi-data` |
+| `ZHUYI_RECONSTRUCTION_MODE` | `real`=真实重建，`mock`=示例模型 | `mock` |
+| `ZHUYI_RECON_PYTHON` | 重建用的 Python（需含 PyTorch+CUDA） | `/root/miniconda3/bin/python` |
+| `ZHUYI_GAUSSIAN_SPLATTING_DIR` | gaussian-splatting 仓库路径 | `/root/gaussian-splatting` |
+| `ZHUYI_COLMAP_NO_GPU` | `0`=GPU COLMAP，`1`=CPU COLMAP | `0` |
+| `DEEPSEEK_API_KEY` | DeepSeek AI 讲解 API 密钥 | `sk-...` |
 
-- 将 JSON 存储迁移到 PostgreSQL
-- 为众包和个人模型增加后台审核与编辑能力
-- 用任务队列替代进程内线程调度
-- 接入地图底图与空间标注能力
+> **存储说明**：后端通过 FastAPI StaticFiles 直接 serve `.splat` 文件，不使用软链接。如果服务器有独立数据盘（如 AutoDL 的 `/root/autodl-tmp`），将 `ZHUYI_DATA_DIR` 指向该盘即可。不设置则所有文件存在项目目录内，适合本地开发。
+
+### 第三步：安装依赖
+
+```bash
+scripts/setup.sh           # Web 依赖（Python venv + npm）
+scripts/setup.sh --gpu     # 额外安装 COLMAP + 3DGS（需要 GPU 环境）
+```
+
+### 第四步：启动项目
+
+```bash
+scripts/start.sh
+```
+
+- 前端：`http://127.0.0.1:6006`
+- 后端：`http://127.0.0.1:8000`（通过前端 Vite proxy 转发）
+
+### 停止项目
+
+```bash
+scripts/stop.sh
+```
+
+**不要用 `pkill` 或手动 `kill`**，否则 PID 文件残留会导致下次启动跳过。
+
+---
+
+## 存储架构
+
+### 数据流
+
+- 运行时所有数据读写走 **SQLite**（`backend/data/zhuyi.db`）
+- `backend/data/*.json` 仅作**种子数据**，数据库为空时导入一次
+- 修改 JSON 文件不会影响已有数据库
+
+### 文件存储
+
+后端在 `create_app()` 中 mount `/generated` 和 `/models` 静态路由，直接 serve `.splat` 文件。前端 Vite 开发服务器通过 proxy 转发这两个路径到后端。
+
+存储位置由 `ZHUYI_DATA_DIR` 决定：
+
+| 路由 | 有 ZHUYI_DATA_DIR | 无 ZHUYI_DATA_DIR |
+|------|-------------------|-------------------|
+| `/models/` | `$ZHUYI_DATA_DIR/models/` | `backend/storage/models/` |
+| `/generated/` | `$ZHUYI_DATA_DIR/generated/` | `backend/storage/generated/` |
+| 重建任务 | `$ZHUYI_DATA_DIR/jobs/` | `backend/storage/jobs/` |
+
+### 模型路径约定
+
+- 种子模型：`/models/xxx.splat`
+- 用户重建模型：`/generated/xxx.splat`
+- `.splat` 文件已 gitignore，不提交
+
+---
+
+## 重建管线
+
+用户上传照片后的完整流程：
+
+```
+上传照片 → jobs/<job_id>/raw/
+    ↓
+图片筛选（去重去模糊）→ input/
+    ↓
+COLMAP 稀疏重建（GPU）→ sparse/0/
+    ↓
+3DGS 训练（-r 4, 10000 迭代）→ output_10000/
+    ↓
+PLY → .splat 转换（自动剪枝）→ <scene>.splat
+    ↓
+发布到 generated/<building_id>.splat + 计算相机参数
+```
+
+- GPU 任务排队：同一时刻只有一个重建任务占用 GPU，其他排队等待
+- 训练参数：`-r 4`（1/4 分辨率），`--min-opacity 0.1 --max-scale 0.05`（自动剪枝）
+- 详细重建实录见 `reconstruction/重建流程实录.md`
+
+### 真实重建环境要求
+
+真实重建需要两个独立的 Python 环境：
+
+| 环境 | 用途 | 要求 |
+|------|------|------|
+| `.venv` | Web 后端 FastAPI | 标准 venv，`pip install -r backend/requirements.txt` |
+| 系统 Python | COLMAP + 3DGS 训练 | PyTorch + CUDA，需编译 diff-gaussian-rasterization 等 |
+
+两个环境不要混用。`.env` 中 `ZHUYI_RECON_PYTHON` 指向系统 Python。
+
+重建环境安装：`scripts/setup.sh --gpu` 或 `bash reconstruction/setup_gpu.sh`
+
+---
+
+## AutoDL 部署备注
+
+AutoDL 环境的特殊配置：
+
+```env
+ZHUYI_DATA_DIR=/root/autodl-tmp/zhuyi-data
+ZHUYI_RECON_PYTHON=/root/miniconda3/bin/python
+ZHUYI_GAUSSIAN_SPLATTING_DIR=/root/gaussian-splatting
+ZHUYI_COLMAP_NO_GPU=0
+```
+
+端口映射：前端 6006 → 公网 HTTPS，后端 8000 通过 Vite proxy 转发。

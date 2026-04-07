@@ -39,8 +39,7 @@ export default function SplatViewer({
     const viewer = viewerRef.current
     if (!viewer) return
     try {
-      // @ts-ignore
-      const cam: THREE.PerspectiveCamera = viewer.camera
+      const cam = viewer.camera
       if (!cam) return
       const pos = cam.position.clone()
       const up = cam.up.clone()
@@ -74,10 +73,8 @@ export default function SplatViewer({
         viewer.start()
 
         // ── 2. 相机 & 渲染器引用 ─────────────────────────────────────
-        // @ts-ignore
-        const camera: THREE.PerspectiveCamera = viewer.camera
-        // @ts-ignore
-        const renderer: THREE.WebGLRenderer = viewer.renderer
+        const camera = viewer.camera
+        const renderer = viewer.renderer
 
         // 强制对齐相机到 cameraSettings，消除 viewer 内部可能引入的 roll
         camera.up.set(...cameraUp)
@@ -173,8 +170,7 @@ export default function SplatViewer({
   const handleClick = () => {
     const viewer = viewerRef.current
     if (!viewer) return
-    // @ts-ignore
-    const renderer: THREE.WebGLRenderer = viewer.renderer
+    const renderer = viewer.renderer
     renderer?.domElement.requestPointerLock()
   }
 
