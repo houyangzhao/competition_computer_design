@@ -36,9 +36,9 @@ graph TB
         CamCalc["compute_camera_settings.py<br/>相机参数计算"]
     end
 
-    subgraph Storage["文件存储"]
-        JobFiles["storage/jobs/{id}/<br/>raw/ input/ output_N/ sparse/"]
-        PublicModels["frontend/public/generated/<br/>{id}.splat + covers/"]
+    subgraph Storage["文件存储 (ZHUYI_DATA_DIR 或 backend/storage/)"]
+        JobFiles["jobs/{id}/<br/>raw/ input/ output_N/ sparse/"]
+        PublicModels["generated/<br/>{id}.splat + covers/"]
     end
 
     Browser -->|HTTPS| Frontend
@@ -180,10 +180,10 @@ flowchart TB
         direction TB
         R1["1. filter_images.py<br/>GPS 筛选 → input/"]
         --> R2["2. reconstruct.sh<br/>COLMAP 特征提取/匹配/稀疏重建"]
-        --> R3["3. train.py<br/>3DGS 训练 (10k iterations, -r 2)"]
+        --> R3["3. train.py<br/>3DGS 训练 (10k iterations, -r 4)"]
         --> R4["4. convert_ply_to_splat.py<br/>--transform outdoor_arch"]
         --> R5["5. detect_model_output()<br/>找到 .splat 文件"]
-        --> R6["6. publish_model()<br/>复制到 frontend/public/generated/"]
+        --> R6["6. publish_model()<br/>复制到 generated/ (StaticFiles serve)"]
         --> R7["7. compute_camera_settings.py<br/>从 COLMAP 计算 up/position/lookAt"]
         --> R8["8. update_job(status=done,<br/>modelPath, cameraSettings)"]
     end
@@ -277,7 +277,7 @@ flowchart LR
         Keys["WASD = 水平移动<br/>Space/Q = 垂直<br/>Shift = 加速"]
     end
 
-    PublicDir["frontend/public/generated/<br/>{id}.splat (30-50MB)"]
+    PublicDir["generated/<br/>{id}.splat (后端 StaticFiles serve)"]
     SV -->|HTTP GET| PublicDir
     DB -->|API| Fetch
 
@@ -329,17 +329,17 @@ graph TB
         Knowledge["knowledge_items<br/>building_id | term | payload"]
     end
 
-    subgraph FileSystem["文件系统"]
-        subgraph JobStorage["backend/storage/jobs/{id}/"]
+    subgraph FileSystem["文件系统 (ZHUYI_DATA_DIR 或 backend/storage/)"]
+        subgraph JobStorage["jobs/{id}/"]
             Raw["raw/ — 原始照片"]
-            Input["input/ — 筛选后照片"]
+            Input["input/ — 筛选后照片（自动旋转统一方向）"]
             Sparse["sparse/0/ — COLMAP 稀疏模型<br/>(images.bin, cameras.bin, points3D.bin)"]
             Output["output_N/ — 3DGS 训练输出<br/>point_cloud/iteration_N/point_cloud.ply"]
             Log["reconstruction.log"]
         end
 
-        subgraph PublicAssets["frontend/public/"]
-            Models["models/ — 预置模型 (bonsai.splat)"]
+        subgraph PublicAssets["后端 StaticFiles 挂载"]
+            Models["models/ — 预置模型 (bonsai.splat 等)"]
             Generated["generated/ — 用户重建结果<br/>{job_id}.splat"]
             Covers["generated/covers/ — 封面图"]
         end
@@ -384,6 +384,6 @@ AutoDL 服务器
 ├── Port 8000 → 后端 FastAPI (仅内网，由 Vite 代理 /api/*)
 └── Port 6008 → 备用端口 → 公网 HTTPS (AutoDL 映射)
 
-Vite 代理规则: /api/* → http://localhost:8000/api/*
-前端直接服务: /generated/*.splat, /models/*.splat (静态文件)
+Vite 代理规则: /api/*, /generated/*, /models/* → http://localhost:8000
+后端 StaticFiles: /generated/*.splat, /models/*.splat
 ```

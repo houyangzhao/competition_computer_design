@@ -144,7 +144,7 @@ PLY → .splat 转换（自动剪枝）→ <scene>.splat
 ```
 
 - GPU 任务排队：同一时刻只有一个重建任务占用 GPU，其他排队等待
-- 训练参数：`-r 4`（1/4 分辨率），`--min-opacity 0.1 --max-scale 0.05`（自动剪枝）
+- 训练参数：`-r 4`（1/4 分辨率），`--min-opacity 0.02 --max-scale 0.1`（自动剪枝）
 - 详细重建实录见 `reconstruction/重建流程实录.md`
 
 ### 真实重建环境要求

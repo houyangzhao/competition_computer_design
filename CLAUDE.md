@@ -101,7 +101,7 @@ Key facts from experience:
 - **Standard training: 10,000 iterations, `-r 4`** (quarter resolution). `-r 2` too slow for Web use case; 7k iterations too few, 30k takes hours.
 - GPU COLMAP on headless server requires `xvfb-run -a` prefix
 - COLMAP mapper may produce multiple submodels; `reconstruct.sh` auto-selects the largest by `images.bin` file size
-- COLMAP uses `--ImageReader.single_camera_per_folder 1`（不用 `single_camera`，否则不同分辨率照片会被跳过）
+- COLMAP uses `--ImageReader.single_camera 1`；`filter_images.py` 会自动将竖拍旋转为横拍统一分辨率
 - COLMAP 注册图像数 < `MIN_IMAGES` 时脚本自动 fail，避免垃圾模型
 - 3DGS coordinate system fix: use `--transform outdoor_arch` in `convert_ply_to_splat.py`
 - After each reconstruction, run `python3 reconstruction/compute_camera_settings.py /root/autodl-tmp/<scene>` to get `cameraSettings` for `buildings.json` — do NOT manually guess camera position/lookAt
@@ -141,8 +141,8 @@ Key facts from experience:
 ## convert_ply_to_splat.py 裁剪选项
 
 转换时可通过参数裁剪高斯体数量以减小文件体积：
-- `--min-opacity 0.1`：移除低不透明度高斯体（推荐 0.05~0.15）
-- `--max-scale 0.05`：移除过大的背景噪声高斯体
+- `--min-opacity 0.02`：移除低不透明度高斯体（推荐 0.02~0.1）
+- `--max-scale 0.1`：移除过大的背景噪声高斯体
 - `--max-gaussians 2000000`：按不透明度保留 top N
 
 典型用法：`python3 convert_ply_to_splat.py input.ply output.splat --transform outdoor_arch --min-opacity 0.02 --max-scale 0.1`
