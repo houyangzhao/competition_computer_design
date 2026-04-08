@@ -110,8 +110,10 @@ export default function SplatViewer({
         let isLocked = false
         let orbitPivot: THREE.Vector3 | null = null
 
+        let totalRoll = 0
         const Q_yaw   = new THREE.Quaternion()
         const Q_pitch = new THREE.Quaternion()
+        const Q_roll  = new THREE.Quaternion()
         const Q_orbit = new THREE.Quaternion()
         const orbitOffset = new THREE.Vector3()
         const viewRay = new THREE.Ray()
@@ -120,8 +122,9 @@ export default function SplatViewer({
         const applyRotation = () => {
           Q_yaw.setFromAxisAngle(horizontalNormal, totalYaw)
           Q_pitch.setFromAxisAngle(new THREE.Vector3(1, 0, 0), totalPitch)
-          // Q_yaw * Q0 * Q_pitch
-          camera.quaternion.copy(Q0).premultiply(Q_yaw).multiply(Q_pitch)
+          Q_roll.setFromAxisAngle(new THREE.Vector3(0, 0, 1), totalRoll)
+          // Q_yaw * Q0 * Q_pitch * Q_roll
+          camera.quaternion.copy(Q0).premultiply(Q_yaw).multiply(Q_pitch).multiply(Q_roll)
         }
 
         const MAX_ORBIT_DIST = 5
@@ -205,11 +208,15 @@ export default function SplatViewer({
           tmpMoveRight.crossVectors(tmpFwd, horizontalNormal).normalize()
 
           const speed = MOVE_SPEED * (KEYS['ShiftLeft'] || KEYS['ShiftRight'] ? 3 : 1)
+          const ROLL_SPEED = 0.015
 
           if (KEYS['KeyW'] || KEYS['ArrowUp'])    camera.position.addScaledVector(tmpFwd,       speed)
           if (KEYS['KeyS'] || KEYS['ArrowDown'])  camera.position.addScaledVector(tmpFwd,      -speed)
           if (KEYS['KeyA'] || KEYS['ArrowLeft'])  camera.position.addScaledVector(tmpMoveRight, -speed)
           if (KEYS['KeyD'] || KEYS['ArrowRight']) camera.position.addScaledVector(tmpMoveRight,  speed)
+
+          if (KEYS['KeyQ']) { totalRoll += ROLL_SPEED; applyRotation() }
+          if (KEYS['KeyE']) { totalRoll -= ROLL_SPEED; applyRotation() }
         }
         rafRef.current = requestAnimationFrame(loop)
 

@@ -53,6 +53,14 @@ scripts/setup.sh --gpu  # 额外安装 COLMAP + 3DGS 重建环境
 
 **不要用 `pkill` 或手动 kill 来停项目**，必须用 `scripts/stop.sh`，否则 pid 文件残留会导致下次启动跳过。
 
+**注意**：`start.sh` 用 `bash -lc` 启动后端，会加载 `~/.bashrc` 中的 conda init，可能导致 conda Python 覆盖 `.venv` Python。脚本中已通过 `export PATH=.venv/bin:$PATH` 强制 venv 优先，不要删除这行。
+
+## 手动操作 SQLite 注意事项
+
+- **不要用 SQL 字符串拼接写入 JSON payload**。`knowledge_items` 等表的 `payload` 列存储 JSON 文本，如果 description 里包含 ASCII 双引号（`"`），手动 INSERT 会产出非法 JSON，导致后端 `json.loads()` 崩溃。
+- 正确做法：通过 API 接口写入（会经过 Pydantic 校验 + `json.dumps()`），或者用 Python 脚本调用 `dump_payload()` 生成合法 JSON 后再插入。
+- 如果必须手动 SQL 操作，用 `json_quote()` 或先用 Python 生成 JSON 字符串再粘贴。
+
 ## Environment
 
 同一台 AutoDL 机器，两个 Python 环境：

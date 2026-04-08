@@ -52,6 +52,7 @@ else
   nohup bash -lc "
     cd '$BACKEND_DIR'
     source '$PROJECT_ROOT/.venv/bin/activate'
+    export PATH='$PROJECT_ROOT/.venv/bin':\"\$PATH\"
     exec uvicorn main:app --host 127.0.0.1 --port 8000
   " >"$BACKEND_LOG" 2>&1 < /dev/null &
   echo $! >"$BACKEND_PID_FILE"
