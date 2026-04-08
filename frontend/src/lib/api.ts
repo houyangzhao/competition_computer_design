@@ -108,6 +108,12 @@ export async function fetchBuildingKnowledge(id: string, token?: string | null):
   })
 }
 
+export async function fetchMyJobs(token: string): Promise<ReconstructionJob[]> {
+  return requestJson(`${BASE}/reconstruct`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
 export async function submitReconstruction(
   buildingName: string,
   files: File[],
@@ -185,5 +191,11 @@ export async function deleteAdminProject(buildingId: string, token: string): Pro
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  })
+}
+
+export async function fetchAdminJobs(token: string): Promise<ReconstructionJob[]> {
+  return requestJson(`${BASE}/admin/jobs`, {
+    headers: { Authorization: `Bearer ${token}` },
   })
 }

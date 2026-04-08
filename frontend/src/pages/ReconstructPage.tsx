@@ -4,11 +4,11 @@ import MapLocationPicker, { type SelectedLocation } from '../components/MapLocat
 import ReconstructProgress from '../components/ReconstructProgress'
 import SplatViewer from '../components/SplatViewer'
 import { useAuth } from '../context/useAuth'
-import { createAdminProject, deleteAdminProject, fetchBuildings, fetchJobStatus, saveReconstructionJob, submitReconstruction } from '../lib/api'
+import { createAdminProject, deleteAdminProject, fetchAdminJobs, fetchBuildings, fetchJobStatus, fetchMyJobs, saveReconstructionJob, submitReconstruction } from '../lib/api'
 import type { AdminProjectInput, Building, ReconstructionJob } from '../types'
 
 type Step = 'upload' | 'processing' | 'done'
-type AdminMode = 'create' | 'delete'
+type AdminMode = 'jobs' | 'create' | 'delete'
 
 const STORAGE_KEY = 'zhuy_reconstruction_session'
 
@@ -45,7 +45,7 @@ function normalizeJob(raw: Partial<ReconstructionJob> | null | undefined): Recon
 
 function loadPersistedState(): PersistedReconstructionState | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<PersistedReconstructionState>
     if (!parsed?.job?.id) return null
@@ -61,7 +61,7 @@ function loadPersistedState(): PersistedReconstructionState | null {
 }
 
 function clearPersistedState() {
-  sessionStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(STORAGE_KEY)
 }
 
 export default function ReconstructPage() {
@@ -81,7 +81,9 @@ export default function ReconstructPage() {
   const [adminError, setAdminError] = useState<string | null>(null)
   const [adminSuccess, setAdminSuccess] = useState<string | null>(null)
   const [adminSubmitting, setAdminSubmitting] = useState(false)
-  const [adminMode, setAdminMode] = useState<AdminMode>('create')
+  const [adminMode, setAdminMode] = useState<AdminMode>('jobs')
+  const [adminJobs, setAdminJobs] = useState<ReconstructionJob[]>([])
+  const [myJobs, setMyJobs] = useState<ReconstructionJob[]>([])
   const [deletingProjectId, setDeletingProjectId] = useState<string>('')
   const [projectForm, setProjectForm] = useState<AdminProjectInput>({
     name: '',
@@ -103,6 +105,11 @@ export default function ReconstructPage() {
   }, [photos])
 
   useEffect(() => {
+    if (!token) return
+    fetchMyJobs(token).then(setMyJobs).catch(() => {})
+  }, [token])
+
+  useEffect(() => {
     if (user?.role !== 'admin' || !token) {
       setPublicProjects([])
       return
@@ -116,6 +123,11 @@ export default function ReconstructPage() {
       .catch(() => {
         if (!cancelled) setAdminError('管理员项目列表加载失败')
       })
+    fetchAdminJobs(token)
+      .then((items) => {
+        if (!cancelled) setAdminJobs(items)
+      })
+      .catch(() => {})
 
     return () => {
       cancelled = true
@@ -130,7 +142,7 @@ export default function ReconstructPage() {
       return
     }
 
-    sessionStorage.setItem(
+    localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         step,
@@ -160,11 +172,8 @@ export default function ReconstructPage() {
           setStep('upload')
           clearPersistedState()
         }
-      } catch (err) {
-        window.clearInterval(timer)
-        setError(err instanceof Error ? err.message : '重建进度获取失败')
-        setStep('upload')
-        clearPersistedState()
+      } catch {
+        // 轮询失败（网络波动/后端重启），不清除状态，继续重试
       }
     }, 1200)
 
@@ -322,8 +331,9 @@ export default function ReconstructPage() {
             </button>
           </div>
 
-          <div className="mb-4 grid max-w-xl grid-cols-2 gap-2 rounded-2xl border border-stone-800 bg-stone-950/70 p-2">
+          <div className="mb-4 grid max-w-xl grid-cols-3 gap-2 rounded-2xl border border-stone-800 bg-stone-950/70 p-2">
             {[
+              { key: 'jobs', label: '任务进度' },
               { key: 'create', label: '新增项目' },
               { key: 'delete', label: '删除项目' },
             ].map((item) => {
@@ -343,7 +353,62 @@ export default function ReconstructPage() {
             })}
           </div>
 
-          {adminMode === 'create' ? (
+          {adminMode === 'jobs' ? (
+            <div className="rounded-2xl border border-white/5 bg-black/10 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="font-serif text-2xl text-stone-100">重建任务列表</p>
+                  <p className="mt-2 text-sm leading-relaxed text-stone-400">所有用户提交的重建任务及其当前状态。</p>
+                </div>
+                <button
+                  onClick={() => {
+                    if (token) fetchAdminJobs(token).then(setAdminJobs).catch(() => {})
+                  }}
+                  className="rounded-full border border-stone-700 px-5 py-2.5 text-sm tracking-[0.16em] text-stone-300 transition-colors hover:border-amber-500 hover:text-amber-300"
+                >
+                  刷新
+                </button>
+              </div>
+              {adminJobs.length === 0 ? (
+                <div className="flex min-h-72 items-center justify-center rounded-xl border border-dashed border-stone-800 text-sm text-stone-600">
+                  暂无重建任务
+                </div>
+              ) : (
+                <div className="custom-scrollbar max-h-[520px] space-y-3 overflow-y-auto">
+                  {adminJobs.map((j) => {
+                    const statusMap: Record<string, { label: string; color: string }> = {
+                      queued: { label: '排队中', color: 'text-stone-400 bg-stone-800' },
+                      filtering: { label: '筛选中', color: 'text-amber-300 bg-amber-500/15' },
+                      colmap: { label: 'COLMAP', color: 'text-blue-300 bg-blue-500/15' },
+                      matching: { label: '特征匹配', color: 'text-blue-300 bg-blue-500/15' },
+                      reconstructing: { label: '训练中', color: 'text-purple-300 bg-purple-500/15' },
+                      converting: { label: '转换中', color: 'text-cyan-300 bg-cyan-500/15' },
+                      done: { label: '完成', color: 'text-emerald-300 bg-emerald-500/15' },
+                      failed: { label: '失败', color: 'text-red-300 bg-red-500/15' },
+                    }
+                    const s = statusMap[j.status] ?? { label: j.status, color: 'text-stone-400 bg-stone-800' }
+                    return (
+                      <div key={j.id} className="flex items-center gap-4 rounded-xl border border-stone-800 bg-black/30 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-serif text-base text-stone-100">{j.buildingName}</p>
+                          <p className="mt-1 text-xs text-stone-500">
+                            {j.id} · {j.photoCount} 张照片{j.selectedCount != null ? ` · 筛选 ${j.selectedCount} 张` : ''} · {new Date(j.createdAt).toLocaleString('zh-CN')}
+                          </p>
+                        </div>
+                        {j.status !== 'done' && j.status !== 'failed' && (
+                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-800">
+                            <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${j.progress}%` }} />
+                          </div>
+                        )}
+                        <span className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${s.color}`}>{s.label}</span>
+                        {j.error && <p className="shrink-0 max-w-48 truncate text-xs text-red-400" title={j.error}>{j.error}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ) : adminMode === 'create' ? (
             <div className="grid min-h-[540px] gap-5 rounded-2xl border border-white/5 bg-black/10 p-5 xl:grid-cols-[0.82fr_1.18fr]">
               <div className="flex min-h-[500px] flex-col gap-4">
                 <div>
@@ -633,6 +698,44 @@ export default function ReconstructPage() {
                 先注册账号再保存
               </Link>
             )}
+          </div>
+        </div>
+      )}
+
+      {token && myJobs.length > 0 && (
+        <div className="mt-10 rounded-2xl border border-stone-800 bg-stone-900/60 p-5">
+          <h2 className="mb-4 font-serif text-xl text-stone-100">我的重建历史</h2>
+          <div className="space-y-3">
+            {myJobs.map((j) => {
+              const statusMap: Record<string, { label: string; color: string }> = {
+                queued: { label: '排队中', color: 'text-stone-400 bg-stone-800' },
+                filtering: { label: '筛选中', color: 'text-amber-300 bg-amber-500/15' },
+                colmap: { label: 'COLMAP', color: 'text-blue-300 bg-blue-500/15' },
+                matching: { label: '特征匹配', color: 'text-blue-300 bg-blue-500/15' },
+                reconstructing: { label: '训练中', color: 'text-purple-300 bg-purple-500/15' },
+                converting: { label: '转换中', color: 'text-cyan-300 bg-cyan-500/15' },
+                done: { label: '完成', color: 'text-emerald-300 bg-emerald-500/15' },
+                failed: { label: '失败', color: 'text-red-300 bg-red-500/15' },
+              }
+              const s = statusMap[j.status] ?? { label: j.status, color: 'text-stone-400 bg-stone-800' }
+              return (
+                <div key={j.id} className="flex items-center gap-4 rounded-xl border border-stone-800 bg-black/30 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-serif text-base text-stone-100">{j.buildingName}</p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {j.photoCount} 张照片 · {new Date(j.createdAt).toLocaleString('zh-CN')}
+                    </p>
+                  </div>
+                  {j.status !== 'done' && j.status !== 'failed' && (
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-800">
+                      <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${j.progress}%` }} />
+                    </div>
+                  )}
+                  <span className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${s.color}`}>{s.label}</span>
+                  {j.error && <p className="shrink-0 max-w-48 truncate text-xs text-red-400" title={j.error}>{j.error}</p>}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

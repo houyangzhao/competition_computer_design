@@ -2,11 +2,11 @@ from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 
-from models import AdminProjectCreateRequest, Building
+from models import AdminProjectCreateRequest, Building, ReconstructionJob
 
 from ..auth import require_admin
 from ..config import DATA_LOCK, GENERATED_DIR
-from ..crud import create_public_project, delete_public_project, upsert_building_record
+from ..crud import create_public_project, delete_public_project, list_jobs, to_job_response, upsert_building_record
 from ..database import now_iso, open_db
 from ..normalize import normalize_building
 
@@ -33,6 +33,12 @@ def admin_delete_project(building_id: str, authorization: str | None = Header(de
     require_admin(authorization)
     delete_public_project(building_id)
     return {"ok": True, "deletedId": building_id}
+
+
+@router.get("/jobs", response_model=list[ReconstructionJob])
+def admin_list_jobs(authorization: str | None = Header(default=None)):
+    require_admin(authorization)
+    return [to_job_response(j) for j in list_jobs()]
 
 
 @router.post("/import-model", response_model=Building)

@@ -166,6 +166,22 @@ def add_job(job: dict[str, Any]):
             upsert_job_record(conn, job)
 
 
+def list_jobs_by_owner(owner_id: str) -> list[dict[str, Any]]:
+    with DATA_LOCK:
+        with open_db() as conn:
+            rows = conn.execute(
+                "SELECT payload FROM jobs WHERE owner_id = ? ORDER BY created_at DESC", (owner_id,)
+            ).fetchall()
+    return [normalize_job(load_payload(row["payload"])) for row in rows]
+
+
+def list_jobs() -> list[dict[str, Any]]:
+    with DATA_LOCK:
+        with open_db() as conn:
+            rows = conn.execute("SELECT payload FROM jobs ORDER BY created_at DESC").fetchall()
+    return [normalize_job(load_payload(row["payload"])) for row in rows]
+
+
 def get_job(job_id: str) -> dict[str, Any] | None:
     with DATA_LOCK:
         with open_db() as conn:
@@ -185,6 +201,21 @@ def update_job(job_id: str, **updates) -> dict[str, Any]:
             updated = normalize_job({**current, **updates, "updatedAt": now_iso()})
             upsert_job_record(conn, updated)
             return updated
+
+
+def cleanup_stale_jobs():
+    """Mark any non-terminal jobs as failed on startup (threads lost after restart)."""
+    terminal = ("done", "failed")
+    with DATA_LOCK:
+        with open_db() as conn:
+            rows = conn.execute("SELECT payload FROM jobs").fetchall()
+            for row in rows:
+                job = normalize_job(load_payload(row["payload"]))
+                if job.get("status") not in terminal:
+                    job["status"] = "failed"
+                    job["error"] = "服务重启，任务中断"
+                    job["updatedAt"] = now_iso()
+                    upsert_job_record(conn, job)
 
 
 def to_job_response(job: dict[str, Any]) -> ReconstructionJob:

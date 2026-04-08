@@ -15,7 +15,6 @@ interface SplatViewerProps {
 }
 
 const MOVE_SPEED = 0.02  // 每帧移动距离（scene units）
-const KEYS: Record<string, boolean> = {}
 
 function fmt(v: THREE.Vector3) {
   return `[${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}]`
@@ -61,6 +60,8 @@ export default function SplatViewer({
     let disposed = false
 
     // ── 1. 启动 Viewer（禁用内置 controls）─────────────────────────
+    const KEYS: Record<string, boolean> = {}
+
     const viewer = new GaussianSplats3D.Viewer({
       cameraUp,
       initialCameraPosition,
@@ -123,11 +124,13 @@ export default function SplatViewer({
           camera.quaternion.copy(Q0).premultiply(Q_yaw).multiply(Q_pitch)
         }
 
+        const MAX_ORBIT_DIST = 5
         const getOrbitPivot = () => {
           camera.getWorldDirection(viewDirection)
           viewRay.set(camera.position, viewDirection)
           const hit = viewRay.intersectPlane(horizontalPlane, new THREE.Vector3())
-          return hit ?? camera.position.clone().addScaledVector(viewDirection, 1)
+          if (hit && hit.distanceTo(camera.position) < MAX_ORBIT_DIST) return hit
+          return camera.position.clone().addScaledVector(viewDirection, 1.5)
         }
 
         const rotateAroundCurrentPivot = (deltaYaw: number) => {
@@ -199,7 +202,6 @@ export default function SplatViewer({
           if (!isLocked && !fallbackLockedRef.current) return
 
           camera.getWorldDirection(tmpFwd)
-          tmpFwd.sub(horizontalNormal.clone().multiplyScalar(tmpFwd.dot(horizontalNormal))).normalize()
           tmpMoveRight.crossVectors(tmpFwd, horizontalNormal).normalize()
 
           const speed = MOVE_SPEED * (KEYS['ShiftLeft'] || KEYS['ShiftRight'] ? 3 : 1)
@@ -219,6 +221,7 @@ export default function SplatViewer({
           window.removeEventListener('keyup',   onKeyUp)
           fallbackLockedRef.current = false
           orbitPivot = null
+          Object.keys(KEYS).forEach(k => delete KEYS[k])
           if (document.pointerLockElement === renderer.domElement) document.exitPointerLock()
         }
       })

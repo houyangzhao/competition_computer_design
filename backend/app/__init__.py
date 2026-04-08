@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .config import CORS_ORIGINS, GENERATED_DIR, MODELS_DIR
+from .crud import cleanup_stale_jobs
 from .database import initialize_database
 from .routes import include_routers
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
     )
 
     initialize_database()
+    cleanup_stale_jobs()
     include_routers(app)
 
     # 静态文件服务：.splat 模型和生成文件由后端直接 serve

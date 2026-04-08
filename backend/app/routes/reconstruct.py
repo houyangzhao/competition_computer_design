@@ -7,13 +7,19 @@ from models import Building, ReconstructionJob
 
 from ..auth import optional_user_id, require_user
 from ..config import JOBS_ROOT, MIN_RECONSTRUCTION_IMAGES
-from ..crud import add_job, get_job, to_job_response, update_job
+from ..crud import add_job, get_job, list_jobs_by_owner, to_job_response, update_job
 from ..database import now_iso
 from ..normalize import normalize_job
 from ..reconstruction import create_personal_building_from_job, start_reconstruction_thread
 from ..storage import append_job_log, save_uploaded_files
 
 router = APIRouter(prefix="/api/reconstruct", tags=["reconstruct"])
+
+
+@router.get("", response_model=list[ReconstructionJob])
+def list_my_jobs(authorization: str | None = Header(default=None)):
+    user = require_user(authorization)
+    return [to_job_response(j) for j in list_jobs_by_owner(user.id)]
 
 
 @router.post("", response_model=ReconstructionJob)
