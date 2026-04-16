@@ -69,6 +69,7 @@ export default function SplatViewer({
       rootElement: containerRef.current,
       useBuiltInControls: false,
       sceneRevealMode: GaussianSplats3D.SceneRevealMode.Gradual,
+      dynamicScene: true,
     })
     viewerRef.current = viewer
 
